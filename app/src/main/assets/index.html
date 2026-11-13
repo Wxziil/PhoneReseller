@@ -1,0 +1,1382 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Перекуп телефонов</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: игра-тренажёр с нижней панелью вкладок (Главная, Рынок, Склад, Расчёт, Обучение, Меню). Вид «Телефон» держит узкую колонку, «ПК» раскладывает карточки в колонки. Тон: рыночный ценник, жёлтый на холодном сером. */
+:root{
+  --bg:#eceff3; --surface:#ffffff; --ink:#12161c; --muted:#596472; --line:#d5dbe3; --field:#f5f7fa;
+  --tag:#ffd23f; --tag-ink:#1b1600;
+  --good:#0e7a43; --good-bg:#d9f2e3; --warn:#9a5600; --warn-bg:#fbe9cc; --bad:#b3261e; --bad-bg:#fbdedb;
+  --c-buy:#46586d; --c-fix:#7b8ea5; --c-extra:#aab6c6; --c-fee:#d9a516; --c-profit:#1f9d5c;
+  --font-display:'Space Grotesk',system-ui,sans-serif;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --frame:1080px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1216; --surface:#161c23; --ink:#eef1f5; --muted:#9ba6b3; --line:#29313b; --field:#10151b;
+    --good:#62d494; --good-bg:#12301f; --warn:#f1b24c; --warn-bg:#35260c; --bad:#ff8c82; --bad-bg:#3a1613;
+    --c-buy:#5d7189; --c-fix:#7f93ab; --c-extra:#4d5a6b; --c-fee:#d9a516; --c-profit:#3fbf80;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1216; --surface:#161c23; --ink:#eef1f5; --muted:#9ba6b3; --line:#29313b; --field:#10151b;
+  --good:#62d494; --good-bg:#12301f; --warn:#f1b24c; --warn-bg:#35260c; --bad:#ff8c82; --bad-bg:#3a1613;
+  --c-buy:#5d7189; --c-fix:#7f93ab; --c-extra:#4d5a6b; --c-fee:#d9a516; --c-profit:#3fbf80;
+  color-scheme:dark;
+}
+html[data-device="phone"]{--frame:440px}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--font-body); font-size:16px; line-height:1.55;
+  padding-top:0; padding-bottom:calc(92px + env(safe-area-inset-bottom, 0px));
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.frame{max-width:var(--frame); margin:0 auto}
+h1,h2,h3{font-family:var(--font-display); line-height:1.12; margin:0; text-wrap:balance}
+h1{font-size:clamp(2.1rem,7vw,3.6rem); letter-spacing:-.025em}
+h2{font-size:clamp(1.55rem,4vw,2.1rem); letter-spacing:-.01em}
+h3{font-size:1.05rem}
+p{margin:0}
+.mono,.n{font-family:var(--font-mono); font-variant-numeric:tabular-nums}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--tag); outline-offset:2px; border-radius:4px}
+.small{font-size:.88rem}
+
+/* header */
+.top{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 12px; padding-block:14px}
+.brand{font-family:var(--font-display); font-weight:700; font-size:1.1rem; display:flex; align-items:center; gap:10px; min-width:0}
+.brand i{display:inline-block; flex:none; width:22px; height:22px; background:var(--tag); border-radius:6px 6px 6px 2px; position:relative}
+.brand i::after{content:""; position:absolute; left:6px; top:6px; width:6px; height:6px; border-radius:50%; background:var(--bg)}
+.topctl{display:flex; flex-wrap:wrap; gap:8px}
+.seg{display:inline-flex; flex:none; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--field)}
+.seg button{font:inherit; font-size:.85rem; font-weight:600; background:transparent; border:0; color:var(--muted); padding:7px 12px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--tag); color:var(--tag-ink)}
+
+/* shared */
+.head{display:flex; flex-direction:column; gap:8px; margin:10px 0 20px; max-width:62ch}
+.head p{color:var(--muted)}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:22px}
+.btn{font:inherit; font-weight:600; border:2px solid var(--ink); background:var(--tag); color:var(--tag-ink); padding:11px 20px; border-radius:10px; text-decoration:none; cursor:pointer; display:inline-block; text-align:center}
+.btn:disabled{opacity:.45; cursor:not-allowed}
+.btn.ghost{background:transparent; color:var(--ink)}
+.btn.sm{padding:8px 14px; font-size:.9rem}
+.btn.danger{background:transparent; color:var(--bad); border-color:var(--bad)}
+.linkbtn{font:inherit; background:none; border:0; color:var(--muted); text-decoration:underline; cursor:pointer; padding:4px 0}
+.pill{align-self:flex-start; font-weight:600; font-size:.85rem; padding:5px 12px; border-radius:999px; background:var(--field); border:1px solid var(--line)}
+.pill.good{background:var(--good-bg); color:var(--good); border-color:transparent}
+.pill.warn{background:var(--warn-bg); color:var(--warn); border-color:transparent}
+.pill.bad{background:var(--bad-bg); color:var(--bad); border-color:transparent}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px}
+.kpi{border-top:2px solid var(--line); padding-top:8px; min-width:0}
+.kpi .k{font-size:.78rem; color:var(--muted)}
+.kpi .v{font-family:var(--font-mono); font-size:1.1rem; margin-top:2px; overflow-wrap:anywhere}
+.pos{color:var(--good)} .neg{color:var(--bad)} .muted{color:var(--muted)}
+.meter .track{height:10px; border-radius:999px; background:var(--line); overflow:hidden; margin-top:6px}
+.meter .fill{height:100%; background:var(--c-profit); width:0; transition:width .25s}
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{font:inherit; font-size:.88rem; font-weight:600; background:var(--field); color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:7px 14px; cursor:pointer}
+.chip:hover{border-color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--tag); color:var(--tag-ink); border-color:transparent}
+.inp{display:flex; align-items:center; background:var(--field); border:1px solid var(--line); border-radius:10px; padding-right:12px; min-width:0}
+.inp:focus-within{border-color:var(--ink)}
+.inp input{flex:1; min-width:0; background:transparent; border:0; color:var(--ink); font-family:var(--font-mono); font-size:1rem; padding:11px 12px; outline:none}
+.inp span{color:var(--muted); font-family:var(--font-mono); font-size:.9rem}
+.field{display:flex; flex-direction:column; gap:6px; min-width:0}
+.field label{font-size:.85rem; font-weight:600}
+.field small{color:var(--muted); font-size:.78rem; line-height:1.35}
+.field.wide{grid-column:1 / -1}
+.wallet{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 18px; margin-bottom:16px}
+.wallet .k{display:block; font-size:.75rem; color:var(--muted)}
+.wallet b{font-size:1.1rem; overflow-wrap:anywhere}
+.banner{border-radius:14px; padding:14px 18px; font-weight:600; margin-bottom:16px}
+.banner.good{background:var(--good-bg); color:var(--good)}
+.banner.bad{background:var(--bad-bg); color:var(--bad)}
+.empty{text-align:center; color:var(--muted); padding:28px 10px}
+
+/* home */
+.hero{display:grid; grid-template-columns:minmax(0,1fr); gap:28px; align-items:center; padding-block:8px 24px}
+.hero .lead{margin-top:16px; max-width:52ch; color:var(--muted); font-size:1.05rem}
+.cta{display:flex; flex-wrap:wrap; gap:12px; margin-top:22px}
+.tag{background:var(--tag); color:var(--tag-ink); border-radius:20px; padding:24px 24px 24px 60px; position:relative; max-width:380px; width:100%}
+.tag::before{content:""; position:absolute; left:22px; top:50%; width:18px; height:18px; border-radius:50%; background:var(--bg); transform:translateY(-50%); box-shadow:inset 0 0 0 2px rgba(0,0,0,.18)}
+.tag .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; font-weight:600; opacity:.75}
+.tag .model{font-family:var(--font-display); font-weight:700; font-size:1.25rem; margin-top:6px}
+.tag .big{font-family:var(--font-mono); font-weight:500; font-size:2.2rem; margin-top:10px; line-height:1}
+.tag dl{margin:16px 0 0; display:grid; grid-template-columns:1fr auto; gap:4px 16px; font-size:.9rem; border-top:2px dashed rgba(0,0,0,.28); padding-top:14px}
+.tag dt{opacity:.8}
+.tag dd{margin:0; font-family:var(--font-mono); text-align:right}
+.stack{display:flex; flex-direction:column; gap:16px}
+.steps{list-style:none; margin:14px 0 0; padding:0; display:flex; flex-direction:column; gap:14px; counter-reset:s}
+.steps li{display:flex; gap:14px; align-items:flex-start}
+.steps li::before{counter-increment:s; content:counter(s); flex:none; width:30px; height:30px; border-radius:50%; background:var(--tag); color:var(--tag-ink); display:grid; place-items:center; font-family:var(--font-mono); font-weight:500}
+.presets{display:flex; flex-wrap:wrap; gap:8px; margin:12px 0}
+
+/* market and stock */
+.offers,.stocklist{display:grid; grid-template-columns:minmax(0,1fr); gap:14px}
+.offer{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.oh{display:flex; justify-content:space-between; gap:10px; align-items:flex-start}
+.oh b{font-family:var(--font-display); font-size:1.1rem}
+.cond{font-size:.75rem; font-weight:600; background:var(--field); border:1px solid var(--line); border-radius:999px; padding:2px 10px; white-space:nowrap}
+.prices{display:flex; gap:24px; flex-wrap:wrap}
+.prices .k{display:block; font-size:.75rem; color:var(--muted)}
+.prices .big{font-family:var(--font-mono); font-size:1.5rem}
+.prices .v{font-family:var(--font-mono); font-size:1.05rem}
+.insp{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; font-size:.88rem}
+.insp li::before{content:""; display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px; background:var(--good)}
+.insp li.warn::before{background:var(--warn)}
+.insp li.bad::before{background:var(--bad)}
+.insp li.bad{color:var(--bad); font-weight:600}
+.acts{display:flex; flex-wrap:wrap; gap:8px}
+.neg{background:var(--field); border:1px dashed var(--line); border-radius:12px; padding:12px; display:flex; flex-direction:column; gap:10px}
+.negrow{display:flex; gap:8px; align-items:stretch}
+.negrow .inp{flex:1}
+.sellermsg{font-size:.92rem; background:var(--warn-bg); color:var(--warn); border-radius:10px; padding:8px 12px}
+.sellermsg.good{background:var(--good-bg); color:var(--good)}
+.hist{margin-top:20px}
+.hist summary{cursor:pointer; font-weight:600}
+.tablewrap{overflow-x:auto; margin-top:12px}
+table{width:100%; border-collapse:collapse; min-width:520px}
+th{font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); text-align:left; font-weight:600; padding:8px 10px; border-bottom:2px solid var(--line)}
+td{padding:10px; border-bottom:1px solid var(--line)}
+th.n,td.n{text-align:right}
+
+/* chat */
+.chat{display:flex; flex-direction:column; gap:12px}
+.msgs{display:flex; flex-direction:column; gap:8px; max-height:min(50vh,420px); overflow-y:auto; padding:4px 2px}
+.b{max-width:85%; padding:9px 13px; border-radius:14px; overflow-wrap:anywhere}
+.b.me{align-self:flex-end; background:var(--tag); color:var(--tag-ink); border-bottom-right-radius:4px}
+.b.cl{align-self:flex-start; background:var(--field); border:1px solid var(--line); border-bottom-left-radius:4px}
+.b.sys{align-self:center; max-width:100%; background:none; color:var(--muted); font-size:.85rem; text-align:center}
+.b.sys.good{color:var(--good); font-weight:600}
+.chatform{display:flex; gap:8px; align-items:stretch}
+.chatform .inp{flex:1}
+.chatform .inp input{font-family:var(--font-body)}
+
+/* calculator */
+.calc{display:grid; grid-template-columns:minmax(0,1fr); gap:20px}
+.fields{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px}
+.result{display:flex; flex-direction:column; gap:18px; min-width:0}
+.profit{font-family:var(--font-mono); font-size:clamp(2.2rem,8vw,3.1rem); line-height:1; font-weight:500}
+.profit.pos{color:var(--good)} .profit.neg{color:var(--bad)}
+.bar{position:relative; display:flex; height:30px; border-radius:8px; overflow:hidden; background:var(--field); border:1px solid var(--line)}
+.bar span{display:block; height:100%; transition:width .25s}
+.bar .mark{position:absolute; top:-2px; bottom:-2px; width:3px; background:var(--ink)}
+.legend{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px 16px; font-size:.86rem}
+.legend li{display:flex; align-items:center; gap:8px; min-width:0}
+.legend i{width:12px; height:12px; border-radius:3px; flex:none}
+.legend b{margin-left:auto; font-family:var(--font-mono); font-weight:500}
+.maxbuy{background:var(--field); border:1px dashed var(--line); border-radius:12px; padding:14px 16px; font-size:.92rem}
+.maxbuy .v{font-family:var(--font-mono); font-size:1.25rem; display:block; margin-top:2px}
+
+/* learn */
+.subseg{margin-bottom:18px}
+.status{display:flex; flex-wrap:wrap; align-items:center; gap:12px 24px; margin-bottom:20px}
+.status .meter{flex:1 1 220px; min-width:0}
+.groups{display:grid; grid-template-columns:minmax(0,1fr); gap:20px}
+.group{display:flex; flex-direction:column; gap:10px; min-width:0}
+.item{display:flex; gap:12px; align-items:flex-start; cursor:pointer; font-size:.95rem; padding:4px 0}
+.item input{margin-top:4px; width:20px; height:20px; flex:none; accent-color:var(--c-profit)}
+.item.done span.t{color:var(--muted); text-decoration:line-through}
+.stop{font-size:.68rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; background:var(--bad-bg); color:var(--bad); padding:2px 7px; border-radius:5px; margin-left:6px; white-space:nowrap}
+.lessons{display:flex; flex-direction:column; gap:10px; margin-top:16px}
+.lesson{background:var(--surface); border:1px solid var(--line); border-radius:14px}
+.lesson summary{cursor:pointer; list-style:none; display:flex; align-items:center; gap:12px; padding:14px 16px; font-weight:600}
+.lesson summary::-webkit-details-marker{display:none}
+.lesson summary::after{content:"+"; margin-left:auto; font-family:var(--font-mono); color:var(--muted)}
+.lesson[open] summary::after{content:"\2212"}
+.ln{flex:none; width:30px; height:30px; border-radius:50%; border:2px solid var(--line); display:grid; place-items:center; font-family:var(--font-mono); font-size:.85rem}
+.lesson.done .ln{background:var(--c-profit); border-color:transparent; color:#fff}
+.lm{color:var(--muted); font-weight:400; font-size:.8rem; white-space:nowrap}
+.lbody{padding:0 16px 18px 58px; display:flex; flex-direction:column; gap:10px; font-size:.96rem}
+.lbody ul{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px}
+.lbody h4{margin:6px 0 0; font-family:var(--font-display); font-size:.95rem}
+.warnbox{margin-top:16px; background:var(--bad-bg); color:var(--bad); border-radius:12px; padding:14px 18px; font-weight:500}
+.quiz{display:flex; flex-direction:column; gap:22px}
+.q h3{margin-bottom:10px}
+.opts{display:flex; flex-direction:column; gap:8px}
+.opt{font:inherit; text-align:left; background:var(--field); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:11px 14px; cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt.right{background:var(--good-bg); color:var(--good); border-color:transparent; font-weight:600}
+.opt.wrong{background:var(--bad-bg); color:var(--bad); border-color:transparent}
+.opt:disabled{cursor:default}
+.why{margin-top:10px; color:var(--muted); font-size:.92rem}
+
+/* menu */
+.menugrid{display:grid; grid-template-columns:minmax(0,1fr); gap:16px}
+.menu-card{display:flex; flex-direction:column; gap:14px; min-width:0}
+.row{display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px 16px}
+.btns{display:flex; flex-wrap:wrap; gap:10px}
+footer{padding-block:28px 12px; color:var(--muted); font-size:.85rem}
+
+/* toast */
+.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(88px + env(safe-area-inset-bottom, 0px)); z-index:30; width:max-content; max-width:min(440px, calc(100% - 32px)); background:var(--ink); color:var(--bg); padding:12px 18px; border-radius:12px; font-size:.92rem; box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast.bad{background:var(--bad); color:#fff}
+.toast.good{background:var(--c-profit); color:#fff}
+
+/* bottom tab bar */
+.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:20; background:var(--surface); border-top:1px solid var(--line);
+  padding-top:8px; padding-bottom:calc(8px + env(safe-area-inset-bottom, 0px));
+  padding-left:max(8px, env(safe-area-inset-left, 0px)); padding-right:max(8px, env(safe-area-inset-right, 0px))}
+.tabs{max-width:min(var(--frame), 720px); margin:0 auto; display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:2px}
+.tabs a{display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px 2px; text-decoration:none; color:var(--muted); font-size:.68rem; font-weight:600; border-radius:12px; min-width:0}
+.tabs a span.lb{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.tabs svg{width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.tabs .ico{display:grid; place-items:center; width:48px; height:28px; border-radius:999px}
+.tabs a[aria-current="page"]{color:var(--ink)}
+.tabs a[aria-current="page"] .ico{background:var(--tag); color:var(--tag-ink)}
+
+@media (max-width:480px){
+  .fields{grid-template-columns:minmax(0,1fr)}
+  .legend{grid-template-columns:minmax(0,1fr)}
+  .card{padding:18px}
+  .lbody{padding-left:16px}
+  .brand{font-size:1rem}
+}
+@media (min-width:861px){
+  html[data-device="pc"] .hero{grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); gap:40px; padding-block:24px 36px}
+  html[data-device="pc"] .tag{justify-self:end}
+  html[data-device="pc"] .offers,html[data-device="pc"] .stocklist{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html[data-device="pc"] .calc{grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px}
+  html[data-device="pc"] .groups{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html[data-device="pc"] .menugrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html[data-device="pc"] .homegrid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start}
+}
+@media (prefers-reduced-motion:reduce){
+  .bar span,.meter .fill{transition:none}
+}
+</style>
+
+<div class="frame">
+  <header class="top">
+    <div class="brand"><i aria-hidden="true"></i>Перекуп телефонов</div>
+    <div class="topctl">
+      <div class="seg lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="uk" aria-pressed="false">УКР</button>
+        <button type="button" data-lang="en" aria-pressed="false">ENG</button>
+        <button type="button" data-lang="ru" aria-pressed="false">РУС</button>
+      </div>
+      <div class="seg" role="group" aria-label="Валюта">
+        <button type="button" data-cur="UAH" aria-pressed="false">₴</button>
+        <button type="button" data-cur="USD" aria-pressed="false">$</button>
+      </div>
+      <div class="seg" role="group" aria-label="Вид устройства">
+        <button type="button" data-quick="phone" aria-pressed="false">Телефон</button>
+        <button type="button" data-quick="pc" aria-pressed="false">ПК</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ГЛАВНАЯ -->
+    <section class="tab" id="tab-home">
+      <div class="hero">
+        <div>
+          <h1>Купи телефон дёшево, продай дороже</h1>
+          <p class="lead">Игра-тренажёр для перекупа. У тебя есть стартовый капитал, рынок с объявлениями и клиенты, с которыми можно торговаться в чате. Деньги игровые, а навыки настоящие.</p>
+          <div class="cta">
+            <a class="btn" href="#market" data-go="market">Идти на рынок</a>
+            <a class="btn ghost" href="#learn" data-go="learn">Обучение</a>
+          </div>
+        </div>
+        <aside class="tag" aria-label="Пример сделки">
+          <div class="eyebrow">Пример сделки</div>
+          <div class="model">iPhone 12, 64 ГБ</div>
+          <div class="big" id="tagProfit"></div>
+          <dl id="tagList"></dl>
+        </aside>
+      </div>
+
+      <div id="gameBanner"></div>
+
+      <div class="homegrid stack">
+        <div class="card">
+          <h3>Твоя игра</h3>
+          <div class="stack" style="margin-top:14px">
+            <div class="wallet" style="margin:0">
+              <div><span class="k">Деньги</span><b class="w-cash mono"></b></div>
+              <div><span class="k">День</span><b class="w-day mono"></b></div>
+              <div><span class="k">Прибыль</span><b class="w-profit mono"></b></div>
+            </div>
+            <div class="meter">
+              <div id="goalText" class="mono small"></div>
+              <div class="track"><div class="fill" id="goalFill"></div></div>
+            </div>
+            <p class="muted small">Цель: заработать прибыль, равную стартовому капиталу.</p>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Как играть</h3>
+          <ol class="steps">
+            <li><div><b>Рынок.</b> Выбери объявление, нажми «Осмотреть», поторгуйся с продавцом и купи телефон.</div></li>
+            <li><div><b>Склад.</b> Нажми «Найти покупателя» и поторгуйся с клиентом в чате. Клиента играет ИИ.</div></li>
+            <li><div><b>Прибыль.</b> Продай дороже, чем купил. Если клиент не нравится, отдай телефон скупке дешевле.</div></li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h3>Новая игра</h3>
+          <p class="muted small" style="margin-top:6px">Выбери стартовый капитал. Текущая игра сбросится.</p>
+          <div class="presets" id="presets"></div>
+          <div class="field" style="max-width:260px">
+            <label for="startCustom">Или свой капитал</label>
+            <div class="inp"><input id="startCustom" type="number" inputmode="decimal" min="0" placeholder="Например, 50000"><span class="sym"></span></div>
+          </div>
+          <div style="margin-top:14px"><button class="btn" id="startNew" type="button">Начать игру</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- РЫНОК -->
+    <section class="tab" id="tab-market" hidden>
+      <div class="head">
+        <h2>Рынок</h2>
+        <p>Объявления продавцов. Сравни цену продавца с рыночной, осмотри телефон и торгуйся. Цены в игре примерные.</p>
+      </div>
+      <div class="wallet">
+        <div><span class="k">Деньги</span><b class="w-cash mono"></b></div>
+        <div><span class="k">День</span><b class="w-day mono"></b></div>
+        <div><span class="k">Прибыль</span><b class="w-profit mono"></b></div>
+      </div>
+      <div id="marketBanner"></div>
+      <div class="offers" id="offers"></div>
+      <div style="margin-top:18px"><button class="btn ghost" id="nextDay" type="button">Новый день: обновить объявления</button></div>
+    </section>
+
+    <!-- СКЛАД -->
+    <section class="tab" id="tab-stock" hidden>
+      <div class="head">
+        <h2>Склад</h2>
+        <p>Здесь телефоны, которые ты купил. Найди покупателя и поторгуйся в чате или отдай телефон скупке.</p>
+      </div>
+      <div class="wallet">
+        <div><span class="k">Деньги</span><b class="w-cash mono"></b></div>
+        <div><span class="k">День</span><b class="w-day mono"></b></div>
+        <div><span class="k">Прибыль</span><b class="w-profit mono"></b></div>
+      </div>
+      <div class="stocklist" id="stockList"></div>
+
+      <div class="card chat" id="chatPanel" hidden>
+        <div class="row"><button class="linkbtn" id="chatBack" type="button">← К складу</button><b id="chatWho"></b></div>
+        <p class="muted small" id="chatInfo"></p>
+        <div class="msgs" id="chatMsgs" aria-live="polite"></div>
+        <div class="chips" id="chatChips"></div>
+        <form class="chatform" id="chatForm" autocomplete="off">
+          <div class="inp"><input id="chatInput" type="text" placeholder="Напиши клиенту, например: отдам за 12000" aria-label="Сообщение клиенту"></div>
+          <button class="btn" id="chatSend" type="submit">Отправить</button>
+        </form>
+      </div>
+
+      <details class="hist card" id="histBox">
+        <summary>История сделок</summary>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>День</th><th>Модель</th><th class="n">Купил</th><th class="n">Продал</th><th class="n">Прибыль</th><th>Кому</th></tr></thead>
+            <tbody id="histBody"></tbody>
+          </table>
+        </div>
+      </details>
+    </section>
+
+    <!-- РАСЧЁТ -->
+    <section class="tab" id="tab-calc" hidden>
+      <div class="head">
+        <h2>Калькулятор прибыли</h2>
+        <p>Для настоящих сделок и для игры. В полях цифры из примера, поменяй их на свои. Внизу видно, какая цена покупки оставит нужную прибыль.</p>
+      </div>
+      <div class="calc">
+        <div class="card">
+          <div class="fields">
+            <div class="field"><label for="buy">Цена покупки</label><div class="inp"><input id="buy" type="number" inputmode="decimal" min="0" value="14500"><span class="sym"></span></div></div>
+            <div class="field"><label for="sell">Цена продажи</label><div class="inp"><input id="sell" type="number" inputmode="decimal" min="0" value="18200"><span class="sym"></span></div></div>
+            <div class="field"><label for="fix">Ремонт и запчасти</label><div class="inp"><input id="fix" type="number" inputmode="decimal" min="0" value="600"><span class="sym"></span></div><small>Стекло, батарея, чистка</small></div>
+            <div class="field"><label for="extra">Прочие расходы</label><div class="inp"><input id="extra" type="number" inputmode="decimal" min="0" value="200"><span class="sym"></span></div><small>Дорога, доставка, чехол</small></div>
+            <div class="field"><label for="fee">Комиссия площадки</label><div class="inp"><input id="fee" type="number" inputmode="decimal" min="0" max="100" value="0"><span>%</span></div><small>От цены продажи, если берут процент</small></div>
+            <div class="field"><label for="days">Дней до продажи</label><div class="inp"><input id="days" type="number" inputmode="numeric" min="1" value="7"><span>дн.</span></div></div>
+            <div class="field wide"><label for="target">Желаемая прибыль</label><div class="inp"><input id="target" type="number" inputmode="decimal" min="0" value="2500"><span class="sym"></span></div></div>
+          </div>
+        </div>
+        <div class="card result" aria-live="polite">
+          <span class="pill" id="verdict">Введи цены</span>
+          <div class="profit" id="profit">0</div>
+          <div class="kpis">
+            <div class="kpi"><div class="k">ROI</div><div class="v" id="roi">0%</div></div>
+            <div class="kpi"><div class="k">Маржа от продажи</div><div class="v" id="margin">0%</div></div>
+            <div class="kpi"><div class="k">Прибыль в день</div><div class="v" id="perday">0</div></div>
+          </div>
+          <div class="bar" id="bar" role="img" aria-label="Из чего состоит цена продажи"></div>
+          <ul class="legend" id="legend"></ul>
+          <div class="maxbuy">Чтобы заработать желаемую прибыль, покупай не дороже<span class="v" id="maxbuy">0</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ОБУЧЕНИЕ -->
+    <section class="tab" id="tab-learn" hidden>
+      <div class="head">
+        <h2>Обучение</h2>
+        <p>Короткие уроки, чек-лист для живой встречи с продавцом и тест на закрепление.</p>
+      </div>
+      <div class="seg subseg" role="group" aria-label="Раздел обучения">
+        <button type="button" data-sub="lessons" aria-pressed="true">Уроки</button>
+        <button type="button" data-sub="check" aria-pressed="false">Чек-лист</button>
+        <button type="button" data-sub="quiz" aria-pressed="false">Тест</button>
+      </div>
+
+      <div id="sub-lessons">
+        <div class="card">
+          <div class="meter">
+            <div id="learnSummary" class="mono">Прочитано 0 из 0</div>
+            <div class="track"><div class="fill" id="learnFill"></div></div>
+          </div>
+        </div>
+        <div class="lessons" id="lessons"></div>
+        <div class="warnbox">Слишком низкая цена почти всегда значит проблему: блокировку, кражу или скрытую поломку. Краденый телефон означает проблемы с законом, а не просто потерянные деньги.</div>
+      </div>
+
+      <div id="sub-check" hidden>
+        <div class="card">
+          <div class="status">
+            <div class="meter">
+              <div id="checkSummary" class="mono">0 из 0</div>
+              <div class="track"><div class="fill" id="checkFill"></div></div>
+            </div>
+            <span class="pill" id="checkVerdict">Проверка не начата</span>
+            <button class="linkbtn" id="checkReset" type="button">Сбросить отметки</button>
+          </div>
+          <div class="groups" id="groups"></div>
+        </div>
+      </div>
+
+      <div id="sub-quiz" hidden>
+        <div class="head" style="margin-top:0">
+          <h3 id="quizScore">Ответь на четыре вопроса.</h3>
+        </div>
+        <div class="card"><div class="quiz" id="quiz"></div><div style="margin-top:16px"><button class="linkbtn" id="quizReset" type="button">Пройти заново</button></div></div>
+      </div>
+    </section>
+
+    <!-- МЕНЮ -->
+    <section class="tab" id="tab-more" hidden>
+      <div class="head">
+        <h2>Меню</h2>
+        <p>Настройки вида, валюты и ИИ-клиента, быстрые переходы и управление сохранёнными данными.</p>
+      </div>
+      <div class="menugrid">
+        <div class="card menu-card">
+          <h3>Вид устройства</h3>
+          <div class="seg" role="group" aria-label="Вид устройства">
+            <button type="button" data-device-set="auto" aria-pressed="false">Авто</button>
+            <button type="button" data-device-set="phone" aria-pressed="false">Телефон</button>
+            <button type="button" data-device-set="pc" aria-pressed="false">ПК</button>
+          </div>
+          <p class="muted small" id="deviceHint"></p>
+        </div>
+        <div class="card menu-card">
+          <h3>Валюта и курс</h3>
+          <div class="seg" role="group" aria-label="Валюта">
+            <button type="button" data-cur="UAH" aria-pressed="false">Гривна ₴</button>
+            <button type="button" data-cur="USD" aria-pressed="false">Доллар $</button>
+          </div>
+          <div class="field" style="max-width:260px">
+            <label for="rate">Курс: 1 $ = … ₴</label>
+            <div class="inp"><input id="rate" type="number" inputmode="decimal" min="1" step="0.01"><span>₴</span></div>
+            <small>Курс задаётся вручную, поставь актуальный.</small>
+          </div>
+        </div>
+        <div class="card menu-card">
+          <h3>Клиент в чате</h3>
+          <div class="seg" role="group" aria-label="Режим клиента">
+            <button type="button" data-ai-set="on" aria-pressed="false">ИИ-клиент</button>
+            <button type="button" data-ai-set="off" aria-pressed="false">Простой бот</button>
+          </div>
+          <p class="muted small" id="aiHint"></p>
+        </div>
+        <div class="card menu-card">
+          <h3>Тема</h3>
+          <div class="seg" role="group" aria-label="Тема оформления">
+            <button type="button" data-theme-set="auto" aria-pressed="false">Авто</button>
+            <button type="button" data-theme-set="light" aria-pressed="false">Светлая</button>
+            <button type="button" data-theme-set="dark" aria-pressed="false">Тёмная</button>
+          </div>
+        </div>
+        <div class="card menu-card">
+          <h3>Данные</h3>
+          <p class="muted small">Игра, чек-лист и прогресс обучения хранятся только в этом браузере.</p>
+          <div class="btns">
+            <button class="btn ghost sm" id="resetCheck" type="button">Сбросить чек-лист</button>
+            <button class="btn ghost sm" id="resetLearn" type="button">Сбросить обучение</button>
+            <button class="btn danger sm" id="resetGame" type="button">Сбросить игру</button>
+          </div>
+        </div>
+      </div>
+      <footer>Калькулятор не сохраняет введённые цифры после обновления страницы.</footer>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<nav class="tabbar" aria-label="Разделы">
+  <div class="tabs">
+    <a href="#home" data-tab="home"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></span><span class="lb">Главная</span></a>
+    <a href="#market" data-tab="market"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1"/></svg></span><span class="lb">Рынок</span></a>
+    <a href="#stock" data-tab="stock"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg></span><span class="lb">Склад</span></a>
+    <a href="#calc" data-tab="calc"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M12 12h2M8 16h2M12 16h2"/></svg></span><span class="lb">Расчёт</span></a>
+    <a href="#learn" data-tab="learn"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/></svg></span><span class="lb">Обучение</span></a>
+    <a href="#more" data-tab="more"><span class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></span><span class="lb">Меню</span></a>
+  </div>
+</nav>
+
+<script>
+(function(){
+
+  var $ = function(id){ return document.getElementById(id); };
+  var lang = localStorage.getItem('perekup-lang') || 'ru';
+  if(['uk','en','ru'].indexOf(lang) < 0) lang = 'ru';
+
+  // UI translations. Dynamic text is translated too, as it is inserted into the page.
+  var DICT = {
+    uk: {
+      'Перекуп телефонов':'Перекуп телефонів','Главная':'Головна','Рынок':'Ринок','Склад':'Склад','Расчёт':'Розрахунок','Обучение':'Навчання','Меню':'Меню',
+      'Телефон':'Телефон','ПК':'ПК','Авто':'Авто','Светлая':'Світла','Тёмная':'Темна','Гривна ₴':'Гривня ₴','Доллар $':'Долар $',
+      'Купи телефон дёшево, продай дороже':'Купи телефон дешево, продай дорожче',
+      'Игра-тренажёр для перекупа. У тебя есть стартовый капитал, рынок с объявлениями и клиенты, с которыми можно торговаться в чате. Деньги игровые, а навыки настоящие.':'Гра-тренажер для перекупника. У тебе є стартовий капітал, ринок з оголошеннями та клієнти, з якими можна торгуватися в чаті. Гроші ігрові, а навички справжні.',
+      'Идти на рынок':'Перейти на ринок','Пример сделки':'Приклад угоди','Твоя игра':'Твоя гра','Деньги':'Гроші','День':'День','Прибыль':'Прибуток',
+      'Цель: заработать прибыль, равную стартовому капиталу.':'Мета: заробити прибуток, що дорівнює стартовому капіталу.',
+      'Как играть':'Як грати','Рынок. Выбери объявление, нажми «Осмотреть», поторгуйся с продавцом и купи телефон.':'Ринок. Обери оголошення, натисни «Оглянути», поторгуйся з продавцем і купи телефон.',
+      'Склад. Нажми «Найти покупателя» и поторгуйся с клиентом в чате. Клиента играет ИИ.':'Склад. Натисни «Знайти покупця» та поторгуйся з клієнтом у чаті. Клієнта грає ШІ.',
+      'Прибыль. Продай дороже, чем купил. Если клиент не нравится, отдай телефон скупке дешевле.':'Прибуток. Продай дорожче, ніж купив. Якщо клієнт не підходить, віддай телефон скупці дешевше.',
+      'Новая игра':'Нова гра','Выбери стартовый капитал. Текущая игра сбросится.':'Обери стартовий капітал. Поточну гру буде скинуто.',
+      'Или свой капитал':'Або власний капітал','Начать игру':'Почати гру','Объявления продавцов. Сравни цену продавца с рыночной, осмотри телефон и торгуйся. Цены в игре примерные.':'Оголошення продавців. Порівняй ціну продавця з ринковою, оглянь телефон і торгуйся. Ціни в грі орієнтовні.',
+      'Новый день: обновить объявления':'Новий день: оновити оголошення',
+      'Здесь телефоны, которые ты купил. Найди покупателя и поторгуйся в чате или отдай телефон скупке.':'Тут телефони, які ти купив. Знайди покупця та поторгуйся в чаті або віддай телефон скупці.',
+      '← К складу':'← До складу','Напиши клиенту, например: отдам за 12000':'Напиши клієнту, наприклад: віддам за 12000','Отправить':'Надіслати','История сделок':'Історія угод',
+      'Купил':'Купив','Продал':'Продав','Кому':'Кому','Калькулятор прибыли':'Калькулятор прибутку',
+      'Для настоящих сделок и для игры. В полях цифры из примера, поменяй их на свои. Внизу видно, какая цена покупки оставит нужную прибыль.':'Для справжніх угод і для гри. У полях цифри з прикладу — заміни їх на свої. Унизу видно, яка ціна купівлі залишить потрібний прибуток.',
+      'Цена покупки':'Ціна купівлі','Цена продажи':'Ціна продажу','Ремонт и запчасти':'Ремонт і запчастини','Прочие расходы':'Інші витрати',
+      'Стекло, батарея, чистка':'Скло, батарея, чищення','Дорога, доставка, чехол':'Дорога, доставка, чохол','Комиссия площадки':'Комісія майданчика',
+      'От цены продажи, если берут процент':'Від ціни продажу, якщо беруть відсоток','Дней до продажи':'Днів до продажу','дн.':'дн.',
+      'Желаемая прибыль':'Бажаний прибуток','Введи цены':'Введи ціни','Маржа от продажи':'Маржа від продажу','Прибыль в день':'Прибуток за день',
+      'Из чего состоит цена продажи':'З чого складається ціна продажу','Чтобы заработать желаемую прибыль, покупай не дороже':'Щоб заробити бажаний прибуток, купуй не дорожче',
+      'Короткие уроки, чек-лист для живой встречи с продавцом и тест на закрепление.':'Короткі уроки, чекліст для особистої зустрічі з продавцем і тест для закріплення.',
+      'Уроки':'Уроки','Чек-лист':'Чекліст','Тест':'Тест','Прочитано 0 из 0':'Прочитано 0 із 0',
+      'Слишком низкая цена почти всегда значит проблему: блокировку, кражу или скрытую поломку. Краденый телефон означает проблемы с законом, а не просто потерянные деньги.':'Занадто низька ціна майже завжди означає проблему: блокування, крадіжку або приховану поломку. Краденый телефон — це проблеми із законом, а не просто втрачені гроші.',
+      'Проверка не начата':'Перевірку не розпочато','Сбросить отметки':'Скинути позначки','Ответь на четыре вопроса.':'Дай відповіді на чотири запитання.',
+      'Пройти заново':'Пройти ще раз','Настройки вида, валюты и ИИ-клиента, быстрые переходы и управление сохранёнными данными.':'Налаштування вигляду, валюти та ШІ-клієнта, швидкі переходи й керування збереженими даними.',
+      'Вид устройства':'Вигляд пристрою','Сейчас включён вид «':'Зараз увімкнено вигляд «','Гривна ₴':'Гривня ₴','Доллар $':'Долар $',
+      'Валюта и курс':'Валюта та курс','Курс: 1 $ = … ₴':'Курс: 1 $ = … ₴','Курс задаётся вручную, поставь актуальный.':'Курс задається вручну — вкажи актуальний.',
+      'Клиент в чате':'Клієнт у чаті','ИИ-клиент':'ШІ-клієнт','Простой бот':'Простий бот','Тема':'Тема','Данные':'Дані',
+      'Игра, чек-лист и прогресс обучения хранятся только в этом браузере.':'Гра, чекліст і прогрес навчання зберігаються лише в цьому браузері.',
+      'Сбросить чек-лист':'Скинути чекліст','Сбросить обучение':'Скинути навчання','Сбросить игру':'Скинути гру',
+      'Калькулятор не сохраняет введённые цифры после обновления страницы.':'Калькулятор не зберігає введені числа після оновлення сторінки.',
+      'Отличное':'Чудовий','Хорошее':'Добрий','Среднее':'Середній','Потрёпанное':'Потертий',
+      'без царапин, как новый':'без подряпин, як новий','мелкие царапины на корпусе':'дрібні подряпини на корпусі',
+      'потёртости и скол на рамке':'потертості та скол на рамці','трещина на стекле или сильные следы':'тріщина на склі або значні сліди використання',
+      'Нажми ещё раз, текущая игра сбросится':'Натисни ще раз — поточну гру буде скинуто',
+      'Нажми ещё раз, чтобы сбросить игру':'Натисни ще раз, щоб скинути гру',
+      'Новая игра. Старт: ':'Нова гра. Старт: ','Игра сброшена':'Гру скинуто','Чек-лист сброшен':'Чекліст скинуто','Обучение сброшено':'Навчання скинуто',
+      'Прочитано, снять отметку':'Прочитано, зняти позначку','Отметить прочитанным':'Позначити як прочитане',
+      'мин':'хв','Ответь на четыре вопроса.':'Дай відповіді на чотири запитання.',
+      'Цель достигнута: прибыль ':'Мету досягнуто: прибуток ','Можно играть дальше или начать новую игру.':'Можна грати далі або почати нову гру.',
+      'Денег не хватает на покупки, а склад пуст. Начни новую игру на главной.':'Не вистачає грошей на покупки, а склад порожній. Почни нову гру на головній.',
+      'Осмотреть':'Оглянути','Найти покупателя':'Знайти покупця','Купить':'Купити','Продать':'Продати','Отдать в скупку':'Віддати в скупку',
+      'Предложи свою цену. У продавца есть нижний предел, у тебя три попытки.':'Запропонуй свою ціну. У продавця є нижня межа, у тебе три спроби.',
+      'IMEI совпадает и не в чёрном списке':'IMEI збігається й не в чорному списку','Аккаунт чистый, сброс проходит':'Обліковий запис чистий, скидання працює',
+      'Батарея в норме':'Батарея в нормі','Экран, камеры и связь работают':'Екран, камери та зв’язок працюють',
+      'Привязан чужой аккаунт: перепродать нельзя (стоп)':'Прив’язано чужий обліковий запис: перепродати не можна (стоп)',
+      'Батарея около 70%: цена ниже рынка':'Батарея близько 70%: ціна нижча за ринкову',
+      'История сделок':'Історія угод','Результат: ':'Результат: ','Отвечено ':'Відповідей: ',' из ':' із ',
+      'Отлично, можно переходить к практике.':'Чудово, можна переходити до практики.',
+      'Перечитай уроки по ошибкам и пройди ещё раз.':'Перечитай уроки за помилками й пройди ще раз.',
+      'Проверка не начата':'Перевірку не розпочато','Нажми ещё раз':'Натисни ще раз'
+    },
+    en: {
+      'Перекуп телефонов':'Phone Reseller Simulator','Главная':'Home','Рынок':'Market','Склад':'Inventory','Расчёт':'Calculator','Обучение':'Learning','Меню':'Menu',
+      'Телефон':'Phone','ПК':'Desktop','Авто':'Auto','Светлая':'Light','Тёмная':'Dark','Гривна ₴':'Hryvnia ₴','Доллар $':'Dollar $',
+      'Купи телефон дёшево, продай дороже':'Buy low, sell phones for more',
+      'Игра-тренажёр для перекупа. У тебя есть стартовый капитал, рынок с объявлениями и клиенты, с которыми можно торговаться в чате. Деньги игровые, а навыки настоящие.':'A phone-reselling simulator. You have starting capital, a marketplace of listings, and customers you can negotiate with in chat. The money is virtual; the skills are real.',
+      'Идти на рынок':'Go to market','Пример сделки':'Example deal','Твоя игра':'Your game','Деньги':'Cash','День':'Day','Прибыль':'Profit',
+      'Цель: заработать прибыль, равную стартовому капиталу.':'Goal: earn profit equal to your starting capital.',
+      'Как играть':'How to play','Рынок. Выбери объявление, нажми «Осмотреть», поторгуйся с продавцом и купи телефон.':'Market. Choose a listing, inspect the phone, negotiate with the seller, and buy it.',
+      'Склад. Нажми «Найти покупателя» и поторгуйся с клиентом в чате. Клиента играет ИИ.':'Inventory. Find a buyer and negotiate with the customer in chat. The customer is played by AI.',
+      'Прибыль. Продай дороже, чем купил. Если клиент не нравится, отдай телефон скупке дешевле.':'Profit. Sell for more than you paid. If a customer is not suitable, sell the phone to a buyback shop for less.',
+      'Новая игра':'New game','Выбери стартовый капитал. Текущая игра сбросится.':'Choose your starting capital. Your current game will be reset.',
+      'Или свой капитал':'Or enter your own capital','Начать игру':'Start game',
+      'Объявления продавцов. Сравни цену продавца с рыночной, осмотри телефон и торгуйся. Цены в игре примерные.':'Seller listings. Compare asking prices with the market, inspect the phone, and negotiate. In-game prices are estimates.',
+      'Новый день: обновить объявления':'New day: refresh listings',
+      'Здесь телефоны, которые ты купил. Найди покупателя и поторгуйся в чате или отдай телефон скупке.':'Phones you have bought appear here. Find a buyer and negotiate in chat, or sell the phone to a buyback shop.',
+      '← К складу':'← Back to inventory','Напиши клиенту, например: отдам за 12000':'Message the customer, e.g. I can do 12000','Отправить':'Send','История сделок':'Deal history',
+      'Купил':'Bought','Продал':'Sold','Кому':'Buyer','Калькулятор прибыли':'Profit calculator',
+      'Для настоящих сделок и для игры. В полях цифры из примера, поменяй их на свои. Внизу видно, какая цена покупки оставит нужную прибыль.':'For real deals and the game. Replace the example numbers with your own. The bottom shows the maximum purchase price for your target profit.',
+      'Цена покупки':'Purchase price','Цена продажи':'Selling price','Ремонт и запчасти':'Repairs and parts','Прочие расходы':'Other expenses',
+      'Стекло, батарея, чистка':'Screen, battery, cleaning','Дорога, доставка, чехол':'Travel, delivery, case','Комиссия площадки':'Platform fee',
+      'От цены продажи, если берут процент':'Percentage of the sale price, if charged','Дней до продажи':'Days until sale','дн.':'days',
+      'Желаемая прибыль':'Target profit','Введи цены':'Enter prices','Маржа от продажи':'Sales margin','Прибыль в день':'Profit per day',
+      'Из чего состоит цена продажи':'Sale price breakdown','Чтобы заработать желаемую прибыль, покупай не дороже':'To reach your target profit, do not pay more than',
+      'Короткие уроки, чек-лист для живой встречи с продавцом и тест на закрепление.':'Short lessons, an in-person seller checklist, and a knowledge quiz.',
+      'Уроки':'Lessons','Чек-лист':'Checklist','Тест':'Quiz','Прочитано 0 из 0':'0 of 0 lessons read',
+      'Слишком низкая цена почти всегда значит проблему: блокировку, кражу или скрытую поломку. Краденый телефон означает проблемы с законом, а не просто потерянные деньги.':'A very low price usually signals a problem: a lock, theft, or hidden damage. A stolen phone can lead to legal trouble, not just lost money.',
+      'Проверка не начата':'Not started','Сбросить отметки':'Clear checks','Ответь на четыре вопроса.':'Answer four questions.',
+      'Пройти заново':'Try again','Настройки вида, валюты и ИИ-клиента, быстрые переходы и управление сохранёнными данными.':'Display, currency, and AI customer settings, quick navigation, and saved-data controls.',
+      'Вид устройства':'Device view','Валюта и курс':'Currency and exchange rate','Курс: 1 $ = … ₴':'Rate: 1 $ = … ₴',
+      'Курс задаётся вручную, поставь актуальный.':'Set the current exchange rate manually.','Клиент в чате':'Chat customer','ИИ-клиент':'AI customer','Простой бот':'Basic bot',
+      'Тема':'Theme','Данные':'Data','Игра, чек-лист и прогресс обучения хранятся только в этом браузере.':'Game, checklist, and learning progress are stored only in this browser.',
+      'Сбросить чек-лист':'Reset checklist','Сбросить обучение':'Reset learning','Сбросить игру':'Reset game',
+      'Калькулятор не сохраняет введённые цифры после обновления страницы.':'The calculator does not save entered values after the page is refreshed.',
+      'Отличное':'Excellent','Хорошее':'Good','Среднее':'Fair','Потрёпанное':'Worn',
+      'без царапин, как новый':'no scratches, like new','мелкие царапины на корпусе':'minor scratches on the body',
+      'потёртости и скол на рамке':'scuffs and a chip on the frame','трещина на стекле или сильные следы':'cracked glass or heavy wear',
+      'Нажми ещё раз, текущая игра сбросится':'Click again to reset the current game','Нажми ещё раз, чтобы сбросить игру':'Click again to reset the game',
+      'Новая игра. Старт: ':'New game. Starting cash: ','Игра сброшена':'Game reset','Чек-лист сброшен':'Checklist reset','Обучение сброшено':'Learning progress reset',
+      'Прочитано, снять отметку':'Read; unmark','Отметить прочитанным':'Mark as read','мин':'min',
+      'Цель достигнута: прибыль ':'Goal reached: profit ','Можно играть дальше или начать новую игру.':'You can keep playing or start a new game.',
+      'Денег не хватает на покупки, а склад пуст. Начни новую игру на главной.':'Not enough cash to buy anything and inventory is empty. Start a new game on the Home page.',
+      'Осмотреть':'Inspect','Найти покупателя':'Find a buyer','Купить':'Buy','Продать':'Sell','Отдать в скупку':'Sell to buyback',
+      'Предложи свою цену. У продавца есть нижний предел, у тебя три попытки.':'Make an offer. The seller has a minimum price; you get three attempts.',
+      'IMEI совпадает и не в чёрном списке':'IMEI matches and is not blacklisted','Аккаунт чистый, сброс проходит':'Account is clear; reset works',
+      'Батарея в норме':'Battery is healthy','Экран, камеры и связь работают':'Screen, cameras, and network work',
+      'Привязан чужой аккаунт: перепродать нельзя (стоп)':'Another account is linked: cannot resell (stop)',
+      'Батарея около 70%: цена ниже рынка':'Battery around 70%: price below market',
+      'Результат: ':'Result: ','Отвечено ':'Answered ',' из ':' of ',
+      'Отлично, можно переходить к практике.':'Great — you are ready for practice.',
+      'Перечитай уроки по ошибкам и пройди ещё раз.':'Review the lessons related to your mistakes and try again.'
+    }
+  };
+
+  function translateText(s) {
+    if (lang === 'ru') return s;
+    var d = DICT[lang] || {};
+    if (Object.prototype.hasOwnProperty.call(d, s)) return d[s];
+    // Translate common fragments inside generated messages without changing model names or prices.
+    var out = s;
+    Object.keys(d).sort(function(a,b){ return b.length-a.length; }).forEach(function(k){
+      if(k.length > 5 && out.indexOf(k) >= 0) out = out.split(k).join(d[k]);
+    });
+    return out;
+  }
+  var originalNodes = new WeakMap();
+  function translatePage(root) {
+    if (lang === 'ru') {
+      // Restore original text captured on first pass.
+      var walkerRestore = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      while(walkerRestore.nextNode()) {
+        var n0 = walkerRestore.currentNode;
+        if(originalNodes.has(n0)) n0.nodeValue = originalNodes.get(n0);
+      }
+    } else {
+      var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      var nodes = [];
+      while(walker.nextNode()) nodes.push(walker.currentNode);
+      nodes.forEach(function(n){
+        if(!originalNodes.has(n)) originalNodes.set(n, n.nodeValue);
+        n.nodeValue = translateText(originalNodes.get(n));
+      });
+    }
+    var attrs = ['placeholder','aria-label','title'];
+    each(root.querySelectorAll ? root.querySelectorAll('input,button,a,[aria-label],[title]') : [], function(el){
+      attrs.forEach(function(a){
+        if(!el.hasAttribute(a)) return;
+        var key = 'data-original-' + a;
+        if(!el.hasAttribute(key)) el.setAttribute(key, el.getAttribute(a));
+        el.setAttribute(a, translateText(el.getAttribute(key)));
+      });
+    });
+    each(document.querySelectorAll('[data-lang]'), function(b){
+      b.setAttribute('aria-pressed', b.dataset.lang === lang ? 'true' : 'false');
+    });
+    document.documentElement.lang = lang;
+    document.title = translateText('Перекуп телефонов');
+  }
+  each(document.querySelectorAll('[data-lang]'), function(b){
+    b.addEventListener('click', function(){
+      lang = b.dataset.lang;
+      localStorage.setItem('perekup-lang', lang);
+      translatePage(document.body);
+      nf = new Intl.NumberFormat(lang === 'uk' ? 'uk-UA' : lang === 'en' ? 'en-US' : 'ru-RU', {maximumFractionDigits:0});
+      pf = new Intl.NumberFormat(lang === 'uk' ? 'uk-UA' : lang === 'en' ? 'en-US' : 'ru-RU', {maximumFractionDigits:1, minimumFractionDigits:1});
+      renderAll();
+      renderChecks(); renderLessons(); renderQuiz();
+      translatePage(document.body);
+    });
+  });
+  var langObserver = new MutationObserver(function(records){
+    if(lang === 'ru') return;
+    records.forEach(function(rec){
+      each(rec.addedNodes || [], function(node){
+        if(node.nodeType === 3) {
+          if(!originalNodes.has(node)) originalNodes.set(node, node.nodeValue);
+          node.nodeValue = translateText(originalNodes.get(node));
+        } else if(node.nodeType === 1) translatePage(node);
+      });
+    });
+  });
+  langObserver.observe(document.body, {childList:true,subtree:true});
+
+  var nf = new Intl.NumberFormat(lang === 'uk' ? 'uk-UA' : lang === 'en' ? 'en-US' : 'ru-RU', {maximumFractionDigits:0});
+  var pf = new Intl.NumberFormat(lang === 'uk' ? 'uk-UA' : lang === 'en' ? 'en-US' : 'ru-RU', {maximumFractionDigits:1, minimumFractionDigits:1});
+  function pct(n){ return pf.format(n) + '%'; }
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function store(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  function load(k){ try{ var raw = localStorage.getItem(k); return raw === null ? null : JSON.parse(raw); }catch(e){ return null; } }
+  function each(list, fn){ Array.prototype.forEach.call(list, fn); }
+  function rnd(a, b){ return a + Math.random() * (b - a); }
+  function pick(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+  function r50(x){ return Math.round(x / 50) * 50; }
+  function uid(){ return 'i' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36); }
+
+  /* ---------- настройки: валюта, курс, ИИ ---------- */
+  var SET = load('perekup-set') || {};
+  var cur = SET.cur === 'USD' ? 'USD' : 'UAH';
+  var rate = SET.rate > 0 ? SET.rate : 42;
+  var aiOn = SET.ai !== false;
+  var sampleFn = null, aiAvail = false;
+  function saveSet(){ store('perekup-set', {cur:cur, rate:rate, ai:aiOn}); }
+  function fac(){ return cur === 'USD' ? rate : 1; }
+  function money(u){ return cur === 'USD' ? '$' + nf.format(Math.round(u / rate)) : nf.format(Math.round(u)) + ' ₴'; }
+  function sgn(u){ return (u > 0 ? '+' : u < 0 ? '−' : '') + money(Math.abs(u)); }
+  function toUah(v){ return Math.round(v * fac()); }
+  function nice(u){ return cur === 'USD' ? Math.round(u / rate / 5) * 5 * rate : Math.round(u / 50) * 50; }
+  function shown(u){ return Math.round(u / fac()); }
+
+  /* ---------- вкладки ---------- */
+  var TABS = ['home','market','stock','calc','learn','more'];
+  function show(name){
+    if(TABS.indexOf(name) < 0) name = 'home';
+    TABS.forEach(function(t){ $('tab-' + t).hidden = (t !== name); });
+    each(document.querySelectorAll('.tabs a'), function(a){
+      if(a.dataset.tab === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    window.scrollTo(0, 0);
+  }
+  function go(name){
+    try{ if(location.hash !== '#' + name) location.hash = name; }catch(e){}
+    show(name);
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-tab], a[data-go]') : null;
+    if(!a) return;
+    e.preventDefault();
+    go(a.dataset.tab || a.dataset.go);
+  });
+  window.addEventListener('hashchange', function(){ show(location.hash.replace('#','')); });
+
+  var toastT = null;
+  function toast(text, kind, ms){
+    var t = $('toast'); t.textContent = text; t.className = 'toast' + (kind ? ' ' + kind : ''); t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(function(){ t.hidden = true; }, ms || 3800);
+  }
+
+  /* ---------- вид устройства и тема ---------- */
+  var mq = window.matchMedia ? window.matchMedia('(min-width:861px)') : {matches:true};
+  var devicePref = load('perekup-device'); if(['auto','phone','pc'].indexOf(devicePref) < 0) devicePref = 'auto';
+  var themePref = load('perekup-theme'); if(['auto','light','dark'].indexOf(themePref) < 0) themePref = 'auto';
+  function applyDevice(){
+    var d = devicePref === 'auto' ? (mq.matches ? 'pc' : 'phone') : devicePref;
+    document.documentElement.setAttribute('data-device', d);
+    each(document.querySelectorAll('[data-quick]'), function(b){ b.setAttribute('aria-pressed', b.dataset.quick === d ? 'true' : 'false'); });
+    each(document.querySelectorAll('[data-device-set]'), function(b){ b.setAttribute('aria-pressed', b.dataset.deviceSet === devicePref ? 'true' : 'false'); });
+    var hint = 'Сейчас включён вид «' + (d === 'pc' ? 'ПК' : 'Телефон') + '»' + (devicePref === 'auto' ? ' (выбран по ширине экрана).' : '.');
+    if(d === 'pc' && !mq.matches) hint += ' На узком экране блоки идут в одну колонку.';
+    $('deviceHint').textContent = hint;
+  }
+  function setDevice(v){ devicePref = v; store('perekup-device', v); applyDevice(); }
+  if(mq.addEventListener) mq.addEventListener('change', applyDevice);
+  each(document.querySelectorAll('[data-quick]'), function(b){ b.addEventListener('click', function(){ setDevice(b.dataset.quick); }); });
+  each(document.querySelectorAll('[data-device-set]'), function(b){ b.addEventListener('click', function(){ setDevice(b.dataset.deviceSet); }); });
+  function applyTheme(){
+    var r = document.documentElement;
+    if(themePref === 'auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme', themePref);
+    each(document.querySelectorAll('[data-theme-set]'), function(b){ b.setAttribute('aria-pressed', b.dataset.themeSet === themePref ? 'true' : 'false'); });
+  }
+  each(document.querySelectorAll('[data-theme-set]'), function(b){
+    b.addEventListener('click', function(){ themePref = b.dataset.themeSet; store('perekup-theme', themePref); applyTheme(); });
+  });
+
+  /* ---------- игра: данные ---------- */
+  var CATALOG = [
+    {m:'iPhone XR, 64 ГБ', v:6500}, {m:'iPhone 11, 64 ГБ', v:9500}, {m:'iPhone 12, 64 ГБ', v:13500}, {m:'iPhone 13, 128 ГБ', v:18000},
+    {m:'Samsung Galaxy A52', v:7500}, {m:'Samsung Galaxy A34', v:9000}, {m:'Samsung Galaxy S21', v:11000},
+    {m:'Xiaomi Redmi Note 11', v:5500}, {m:'Xiaomi 12', v:11500}, {m:'Google Pixel 6', v:10000}
+  ];
+  var CONDS = [
+    {k:'Отличное', f:1.0, d:'без царапин, как новый'},
+    {k:'Хорошее', f:.92, d:'мелкие царапины на корпусе'},
+    {k:'Среднее', f:.82, d:'потёртости и скол на рамке'},
+    {k:'Потрёпанное', f:.7, d:'трещина на стекле или сильные следы'}
+  ];
+  var NAMES = ['Андрей','Олена','Максим','Ирина','Сергей','Тарас','Катя','Виктор','Оксана','Денис'];
+  var BLURBS = ['Перешёл на другую модель, продаю старый.','Срочно нужны деньги.','Подарили, а я не пользуюсь.','Покупал себе, продаю с коробкой.','Телефон лежит без дела, отдам нормально.','Меняю на новый, этот лишний.'];
+  var CLIENT_NAMES = ['Игорь','Ольга','Артём','Наталья','Влад','Марина','Богдан','Юля'];
+  var PERSONAS = [
+    {k:'kind', mult:1.0, d:'Ты добродушный и вежливый, торгуешься мало и быстро соглашаешься, если цена честная.'},
+    {k:'hard', mult:.97, d:'Ты жёсткий торгаш: начинаешь с очень низкой цены, давишь на недостатки и уступаешь мелкими шагами.'},
+    {k:'rush', mult:1.04, d:'Ты спешишь и хочешь забрать телефон сегодня, поэтому готов заплатить чуть больше, если с тобой быстро договорятся.'},
+    {k:'doubt', mult:.98, d:'Ты осторожный и сомневающийся: задаёшь вопросы про состояние, батарею и документы, боишься подвоха.'}
+  ];
+  var MAXINV = 8, MAXMSG = 12, MINCASH = 3000;
+  var PRESETS = [10000, 30000, 100000];
+
+  function genOffer(good){
+    var c = pick(CATALOG), r = Math.random(), ci = r < .25 ? 0 : r < .65 ? 1 : r < .9 ? 2 : 3;
+    var fair = r50(c.v * CONDS[ci].f), x = Math.random();
+    var issue = good ? null : (x < .07 ? 'lock' : x < .2 ? 'battery' : null);
+    var ask = r50(fair * (good ? rnd(.8, .88) : rnd(.84, 1.02)));
+    var min = Math.min(ask, r50(ask * rnd(.84, .94)));
+    return {id:uid(), model:c.m, ci:ci, fair:fair, issue:issue, ask:ask, min:min, seller:pick(NAMES), blurb:pick(BLURBS), tries:0, inspected:false, deal:0, msg:'', neg:false};
+  }
+  function genOffers(){
+    var list = [genOffer(true), genOffer(true)];
+    while(list.length < 5) list.push(genOffer(false));
+    return list.sort(function(){ return Math.random() - .5; });
+  }
+  function newGame(start){ return {start:start, cash:start, day:1, inv:[], offers:genOffers(), hist:[], profit:0, deals:0}; }
+  var G = load('perekup-game');
+  if(!(G && typeof G.cash === 'number' && Array.isArray(G.inv) && Array.isArray(G.offers) && Array.isArray(G.hist))) G = newGame(30000);
+  function saveG(){ store('perekup-game', G); }
+  function actualFair(it){ return it.issue === 'battery' ? r50(it.fair * .88) : it.issue === 'lock' ? 0 : it.fair; }
+  function shownFair(it){ return it.known ? actualFair(it) : it.fair; }
+  function endState(){
+    if(G.profit >= G.start) return 'win';
+    if(G.cash < MINCASH && !G.inv.length) return 'lose';
+    return null;
+  }
+
+  /* ---------- кошелёк и главная ---------- */
+  var newStart = 30000;
+  function renderWallet(){
+    each(document.querySelectorAll('.w-cash'), function(e){ e.textContent = money(G.cash); });
+    each(document.querySelectorAll('.w-day'), function(e){ e.textContent = G.day; });
+    each(document.querySelectorAll('.w-profit'), function(e){ e.className = 'w-profit mono ' + (G.profit > 0 ? 'pos' : G.profit < 0 ? 'neg' : ''); e.textContent = sgn(G.profit); });
+    var p = Math.max(0, Math.min(1, G.profit / G.start));
+    $('goalFill').style.width = (p * 100) + '%';
+    $('goalText').textContent = 'Прибыль ' + sgn(G.profit) + ' из ' + money(G.start);
+    var st = endState(), html = '';
+    if(st === 'win') html = '<div class="banner good">Цель достигнута: прибыль ' + sgn(G.profit) + '. Можно играть дальше или начать новую игру.</div>';
+    if(st === 'lose') html = '<div class="banner bad">Денег не хватает на покупки, а склад пуст. Начни новую игру на главной.</div>';
+    $('gameBanner').innerHTML = html; $('marketBanner').innerHTML = html;
+  }
+  function renderPresets(){
+    $('presets').innerHTML = PRESETS.map(function(v){
+      return '<button type="button" class="chip" data-start="' + v + '" aria-pressed="' + (newStart === v) + '">' + money(v) + '</button>';
+    }).join('');
+  }
+  $('presets').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('[data-start]') : null; if(!b) return;
+    newStart = parseInt(b.dataset.start, 10); $('startCustom').value = ''; renderPresets();
+  });
+  function armed(btn, label, action){
+    var base = btn.textContent;
+    btn.addEventListener('click', function(){
+      if(btn.dataset.armed){ clearTimeout(btn._t); delete btn.dataset.armed; btn.textContent = base; action(); }
+      else { btn.dataset.armed = '1'; btn.textContent = label; btn._t = setTimeout(function(){ delete btn.dataset.armed; btn.textContent = base; }, 3500); }
+    });
+  }
+  function startGame(){
+    var custom = parseFloat($('startCustom').value), start = newStart;
+    if(isFinite(custom) && custom > 0) start = Math.max(1000, toUah(custom));
+    G = newGame(start); chat = null; saveG(); $('startCustom').value = '';
+    renderAll(); toast('Новая игра. Старт: ' + money(start), 'good'); go('market');
+  }
+  armed($('startNew'), 'Нажми ещё раз, текущая игра сбросится', startGame);
+  armed($('resetGame'), 'Нажми ещё раз, чтобы сбросить игру', function(){ G = newGame(G.start); chat = null; saveG(); renderAll(); toast('Игра сброшена'); });
+
+  function renderTag(){
+    var rows = [['Купил',14500],['Ремонт',600],['Прочее',200],['Продал',18200]];
+    $('tagList').innerHTML = rows.map(function(r){ return '<dt>' + r[0] + '</dt><dd>' + money(r[1]) + '</dd>'; }).join('') + '<dt>ROI</dt><dd>19%</dd>';
+    $('tagProfit').textContent = '+' + money(2900);
+  }
+
+  /* ---------- рынок ---------- */
+  function offerHtml(o){
+    var c = CONDS[o.ci], price = o.deal > 0 ? o.deal : o.ask, insp = '', neg = '';
+    if(o.inspected){
+      insp = '<ul class="insp"><li>IMEI совпадает и не в чёрном списке</li>' +
+        (o.issue === 'lock' ? '<li class="bad">Привязан чужой аккаунт: перепродать нельзя (стоп)</li>' : '<li>Аккаунт чистый, сброс проходит</li>') +
+        (o.issue === 'battery' ? '<li class="warn">Батарея около 70%: цена ниже рынка</li>' : '<li>Батарея в норме</li>') +
+        '<li>Экран, камеры и связь работают</li></ul>';
+    }
+    if(o.neg && !(o.deal > 0)){
+      neg = '<div class="neg"><div class="small muted">Предложи свою цену. У продавца есть нижний предел, у тебя три попытки.</div><div class="chips">' +
+        [.95,.9,.85].map(function(k){ var p = nice(o.ask * k); return '<button type="button" class="chip" data-act="bid" data-id="' + o.id + '" data-p="' + Math.round(p) + '">' + money(p) + '</button>'; }).join('') +
+        '</div><div class="negrow"><div class="inp"><input type="number" inputmode="decimal" min="0" placeholder="Своя цена" id="bid-' + o.id + '" aria-label="Своя цена"><span>' + (cur === 'USD' ? '$' : '₴') + '</span></div><button type="button" class="btn sm" data-act="bidc" data-id="' + o.id + '">Предложить</button></div></div>';
+    }
+    var tooPoor = G.cash < price, full = G.inv.length >= MAXINV;
+    var buyLbl = full ? 'Склад полон' : tooPoor ? 'Не хватает денег' : 'Купить за ' + money(price);
+    return '<article class="offer"><div class="oh"><b>' + esc(o.model) + '</b><span class="cond">' + c.k + '</span></div>' +
+      '<p class="muted small">' + esc(o.seller) + ': «' + esc(o.blurb) + '» Состояние: ' + c.d + '.</p>' +
+      '<div class="prices"><div><span class="k">Цена продавца</span><span class="big">' + money(o.ask) + '</span></div><div><span class="k">Рынок примерно</span><span class="v">' + money(o.fair) + '</span></div></div>' +
+      insp + (o.msg ? '<div class="sellermsg' + (o.deal > 0 ? ' good' : '') + '">' + esc(o.msg) + '</div>' : '') + neg +
+      '<div class="acts">' + (o.inspected ? '' : '<button type="button" class="btn ghost sm" data-act="inspect" data-id="' + o.id + '">Осмотреть</button>') +
+      (o.deal > 0 ? '' : '<button type="button" class="btn ghost sm" data-act="neg" data-id="' + o.id + '">Торговаться</button>') +
+      '<button type="button" class="btn sm" data-act="buy" data-id="' + o.id + '"' + (tooPoor || full ? ' disabled' : '') + '>' + buyLbl + '</button></div></article>';
+  }
+  function renderOffers(){
+    $('offers').innerHTML = G.offers.length ? G.offers.map(offerHtml).join('') : '<div class="card empty">Предложений нет. Нажми «Новый день», чтобы появились новые объявления.</div>';
+  }
+  function findOffer(id){ for(var i = 0; i < G.offers.length; i++) if(G.offers[i].id === id) return G.offers[i]; return null; }
+  function bid(o, p){
+    if(!o || !(p > 0)) return;
+    o.tries++;
+    if(p >= o.min){
+      o.deal = Math.min(p, o.ask); o.msg = 'Продавец согласен на ' + money(o.deal) + '. Можно покупать.'; o.neg = false;
+    } else if(o.final || o.tries >= 3){
+      G.offers = G.offers.filter(function(x){ return x.id !== o.id; });
+      toast(o.seller + ' устал торговаться и ушёл. Объявление снято.', 'bad');
+    } else {
+      var mid = Math.round((o.ask + p) / 20) * 10;
+      if(mid <= o.min){ o.ask = o.min; o.final = true; o.msg = 'Это моя последняя цена: ' + money(o.min) + '.'; }
+      else { o.ask = Math.min(o.ask, mid); o.msg = 'Ниже ' + money(o.ask) + ' не отдам.'; }
+    }
+    saveG(); renderOffers();
+  }
+  $('offers').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('[data-act]') : null; if(!b || b.disabled) return;
+    var o = findOffer(b.dataset.id), act = b.dataset.act; if(!o) return;
+    if(act === 'inspect'){ o.inspected = true; saveG(); renderOffers(); if(o.issue === 'lock') toast('Осмотр нашёл блокировку аккаунта. Такой телефон лучше не брать.', 'bad', 5000); }
+    else if(act === 'neg'){ o.neg = !o.neg; renderOffers(); }
+    else if(act === 'bid'){ bid(o, parseFloat(b.dataset.p)); }
+    else if(act === 'bidc'){ var inp = $('bid-' + o.id), v = inp ? parseFloat(inp.value) : NaN; if(!isFinite(v) || v <= 0){ toast('Введи цену числом'); return; } bid(o, toUah(v)); }
+    else if(act === 'buy'){
+      var p = o.deal > 0 ? o.deal : o.ask;
+      if(G.cash < p || G.inv.length >= MAXINV) return;
+      G.cash -= p;
+      G.inv.push({id:o.id, model:o.model, ci:o.ci, fair:o.fair, issue:o.issue, known:o.inspected, paid:p, day:G.day});
+      G.offers = G.offers.filter(function(x){ return x.id !== o.id; });
+      saveG(); renderAll(); toast('Куплено: ' + o.model + ' за ' + money(p) + '. Он на складе.', 'good');
+    }
+  });
+  $('nextDay').addEventListener('click', function(){
+    G.day++; G.offers = genOffers(); saveG(); renderAll(); toast('День ' + G.day + '. На рынке новые объявления.');
+  });
+
+  /* ---------- склад ---------- */
+  function stockHtml(it){
+    var c = CONDS[it.ci], locked = it.known && it.issue === 'lock', f = shownFair(it);
+    var status = !it.known ? '<span class="cond">не проверен</span>' : locked ? '<span class="cond" style="color:var(--bad)">блокировка аккаунта</span>' : it.issue === 'battery' ? '<span class="cond" style="color:var(--warn)">батарея 70%</span>' : '<span class="cond" style="color:var(--good)">проверен</span>';
+    var skup = locked ? r50(it.fair * .15) : r50(f * .75);
+    return '<article class="offer"><div class="oh"><b>' + esc(it.model) + '</b>' + status + '</div>' +
+      '<p class="muted small">Состояние: ' + c.k.toLowerCase() + ', ' + c.d + '. Куплен в день ' + it.day + '.</p>' +
+      '<div class="prices"><div><span class="k">Ты заплатил</span><span class="big">' + money(it.paid) + '</span></div><div><span class="k">Рынок примерно</span><span class="v">' + (locked ? 'продать нельзя' : money(f)) + '</span></div></div>' +
+      '<div class="acts"><button type="button" class="btn sm" data-act="chat" data-id="' + it.id + '"' + (locked ? ' disabled' : '') + '>Найти покупателя</button>' +
+      '<button type="button" class="btn ghost sm" data-act="skup" data-id="' + it.id + '">Скупке ≈ ' + money(skup) + '</button></div></article>';
+  }
+  function renderStock(){
+    $('stockList').innerHTML = G.inv.length ? G.inv.map(stockHtml).join('') : '<div class="card empty">Склад пуст. Купи телефон на рынке.</div>';
+    $('histBody').innerHTML = G.hist.length ? G.hist.slice(0, 15).map(function(h){
+      return '<tr><td class="n">' + h.day + '</td><td>' + esc(h.model) + '</td><td class="n">' + money(h.paid) + '</td><td class="n">' + money(h.sold) + '</td><td class="n ' + (h.profit >= 0 ? 'pos' : 'neg') + '">' + sgn(h.profit) + '</td><td>' + esc(h.via) + '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="empty">Пока нет сделок.</td></tr>';
+    renderChat();
+  }
+  function findItem(id){ for(var i = 0; i < G.inv.length; i++) if(G.inv[i].id === id) return G.inv[i]; return null; }
+  function completeSale(it, price, via){
+    var profit = price - it.paid;
+    G.cash += price; G.profit += profit; G.deals++;
+    G.inv = G.inv.filter(function(x){ return x.id !== it.id; });
+    G.hist.unshift({day:G.day, model:it.model, paid:it.paid, sold:price, profit:profit, via:via});
+    saveG(); renderWallet(); renderOffers(); renderStock();
+    return profit;
+  }
+  $('stockList').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('[data-act]') : null; if(!b || b.disabled) return;
+    var it = findItem(b.dataset.id); if(!it) return;
+    if(b.dataset.act === 'skup'){
+      var price = it.issue === 'lock' ? r50(it.fair * .15) : r50(actualFair(it) * .75);
+      var profit = completeSale(it, price, 'скупка');
+      toast('Скупка заплатила ' + money(price) + '. Итог ' + sgn(profit) + (it.issue && !it.known ? '. В телефоне была проблема.' : '.'), profit >= 0 ? 'good' : 'bad', 5000);
+    } else if(b.dataset.act === 'chat'){ openChat(it); }
+  });
+
+  /* ---------- чат с клиентом ---------- */
+  var chat = null;
+  function openChat(it){
+    if(it.issue === 'lock'){
+      it.known = true; saveG(); renderStock();
+      toast('Клиент проверил телефон и нашёл блокировку аккаунта. Его можно отдать только скупке на запчасти.', 'bad', 6000); return;
+    }
+    var pr = pick(PERSONAS), af = actualFair(it);
+    chat = {id:it.id, model:it.model, paid:it.paid, ci:it.ci, battery:it.issue === 'battery', fair:af, shownFair:shownFair(it),
+      client:{name:pick(CLIENT_NAMES), persona:pr, max:r50(af * rnd(.94, 1.1) * pr.mult)},
+      turns:[], view:[], busy:false, ended:false, count:0, patience:3, counter:0, local:!(aiAvail && aiOn)};
+    renderStock();
+    if(chat.local){ greetLocal(); } else { callAI(null); }
+  }
+  function closeChat(){ chat = null; renderStock(); }
+  function addView(w, t, cls){ if(chat){ chat.view.push({w:w, t:t, c:cls || ''}); } }
+  function greetLocal(){
+    addView('cl', pick(['Здравствуйте! Телефон ещё продаётся? Назовите вашу цену.','Добрый день! Меня заинтересовало объявление. Сколько хотите за телефон?']));
+    renderChat();
+  }
+  function rules(){
+    var c = chat.client, sym = cur === 'USD' ? 'долларах (знак $)' : 'гривнах (знак ₴)', cd = CONDS[chat.ci];
+    return 'Ты играешь роль покупателя телефона в учебной игре про перекупов. Пиши по-русски, коротко (1-2 предложения), как живой человек в мессенджере, без списков и без эмодзи.\n' +
+      'Тебя зовут ' + c.name + '. Ты откликнулся на объявление: ' + chat.model + ', состояние: ' + cd.k.toLowerCase() + ' (' + cd.d + ').\n' +
+      'Твой характер: ' + c.persona.d + '\n' +
+      'Цены обсуждайте в ' + sym + '. Примерная цена такого телефона на рынке: ' + shown(chat.fair) + '. Твой максимум: ' + shown(c.max) + '. Максимум секретный: не называй его и не намекай на точное число, и никогда не соглашайся платить больше.\n' +
+      (chat.battery ? 'Ты заметил, что аккумулятор слабый (около 70%), можешь использовать это для торга.\n' : '') +
+      'Торгуйся постепенно: сначала предложи цену заметно ниже рынка или спроси про состояние, потом повышай предложение небольшими шагами, если игрок убедителен. Если игрок называет цену не выше твоего максимума и тебя она устраивает, согласись и забери телефон. Если игрок грубит или не уступает нереальную цену, можешь вежливо уйти.\n' +
+      'Отвечай только JSON-объектом без другого текста: {"reply": "текст сообщения", "deal": null, "leave": false}. Поле deal заполняй числом (итоговая цена в ' + (cur === 'USD' ? 'долларах' : 'гривнах') + ') только когда ты прямо согласился купить именно по этой цене, иначе null. leave ставь true только когда уходишь из переговоров.';
+  }
+  async function callAI(userText){
+    chat.busy = true; renderChat();
+    var mine = chat;
+    var seq = [{role:'user', content:rules() + '\n\nНапиши своё первое сообщение продавцу.'}].concat(chat.turns);
+    if(userText) seq.push({role:'user', content:userText});
+    try{
+      var out = await sampleFn.json(seq, {modelTier:'quick', cache:false});
+      if(chat !== mine) return;
+      if(!out || typeof out.reply !== 'string' || !out.reply.trim()) throw {code:'invalid_json'};
+      if(userText) chat.turns.push({role:'user', content:userText});
+      chat.turns.push({role:'assistant', content:JSON.stringify({reply:out.reply, deal:out.deal === undefined ? null : out.deal, leave:!!out.leave})});
+      chat.busy = false;
+      addView('cl', out.reply.trim());
+      var d = parseFloat(out.deal);
+      if(isFinite(d) && d > 0){ finishDeal(Math.min(Math.round(d * fac()), chat.client.max)); return; }
+      if(out.leave){ chat.ended = true; addView('sys', 'Клиент ушёл из переговоров.'); }
+      renderChat();
+    }catch(e){
+      if(chat !== mine) return;
+      chat.busy = false;
+      var code = e && e.code;
+      if(['not_granted','sampling_disabled','not_declared','capability_disabled','capability_removed'].indexOf(code) >= 0){
+        aiAvail = false; chat.local = true; updateAiHint();
+        addView('sys', 'ИИ недоступен, клиента заменил простой бот.');
+        if(userText){ var r = localReply(userText); applyLocal(r); } else { greetLocal(); }
+        return;
+      }
+      if(!userText){
+        chat.local = true; addView('sys', 'ИИ не ответил, клиента заменил простой бот.'); greetLocal(); return;
+      }
+      chat.count = Math.max(0, chat.count - 1);
+      chat.view.pop();
+      addView('sys', 'Клиент не ответил. Отправь сообщение ещё раз.');
+      $('chatInput').value = userText;
+      renderChat();
+    }
+  }
+  function parseNum(t){
+    var s = t.toLowerCase().replace(/(\d)[  ](?=\d{3}(?!\d))/g, '$1');
+    var re = /(\d+(?:[.,]\d+)?)(?:\s*(k|к|тыс)(?![а-яёa-z]))?/g, m, last = null;
+    while((m = re.exec(s))){ var v = parseFloat(m[1].replace(',', '.')); if(m[2]) v *= 1000; last = v; }
+    return last;
+  }
+  function localReply(text){
+    var c = chat, max = c.client.max;
+    var v = parseNum(text);
+    if(c.counter && v === null && /(^|\s)(ок|окей|да|согласен|согласна|договорились|по рукам|беру|добре)(\s|$|[.!,])/i.test(text)) return {reply:'Отлично, договорились!', deal:c.counter};
+    if(v === null || v <= 0) return {reply:'Назови цену числом, например: «Отдам за ' + Math.round(c.fair / fac()) + '».'};
+    var p = toUah(v);
+    if(p <= max) return {reply:'Хорошо, беру за ' + money(p) + '!', deal:p};
+    c.patience--;
+    if(c.patience <= 0) return {reply:'Нет, это слишком дорого. Я пойду, спасибо.', leave:true};
+    if(p <= max * 1.12){ c.counter = Math.min(max, nice(max * .96)); return {reply:'Дороговато. Могу дать ' + money(c.counter) + '. Устроит?'}; }
+    return {reply:'Это слишком дорого, на рынке такие дешевле. Давай ближе к реальной цене.'};
+  }
+  function applyLocal(r){
+    addView('cl', r.reply);
+    if(r.deal){ finishDeal(r.deal); return; }
+    if(r.leave){ chat.ended = true; addView('sys', 'Клиент ушёл из переговоров.'); }
+    renderChat();
+  }
+  function finishDeal(price){
+    var it = findItem(chat.id); if(!it){ chat.ended = true; renderChat(); return; }
+    var profit = completeSale(it, price, 'клиент ' + chat.client.name);
+    chat.ended = true; chat.busy = false;
+    addView('sys', 'Сделка! Ты получил ' + money(price) + '. Прибыль ' + sgn(profit) + '.', 'good');
+    toast('Продано за ' + money(price) + '. Прибыль ' + sgn(profit), profit >= 0 ? 'good' : 'bad', 4500);
+    renderChat();
+  }
+  function sendChat(text){
+    if(!chat || chat.busy || chat.ended) return;
+    text = text.trim(); if(!text) return;
+    chat.count++; addView('me', text); $('chatInput').value = '';
+    if(chat.count > MAXMSG){ chat.ended = true; addView('cl', 'Мы долго переписываемся. Я пойду, спасибо.'); addView('sys', 'Клиент ушёл: переписка затянулась.'); renderChat(); return; }
+    if(chat.local){ applyLocal(localReply(text)); } else { callAI(text); }
+  }
+  $('chatForm').addEventListener('submit', function(e){ e.preventDefault(); sendChat($('chatInput').value); });
+  $('chatChips').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('[data-say]') : null; if(!b) return;
+    sendChat(b.dataset.say);
+  });
+  $('chatBack').addEventListener('click', closeChat);
+  function renderChat(){
+    var on = !!chat;
+    $('chatPanel').hidden = !on; $('stockList').hidden = on; $('histBox').hidden = on;
+    if(!on) return;
+    $('chatWho').textContent = 'Покупатель: ' + chat.client.name;
+    $('chatInfo').textContent = 'Ты купил за ' + money(chat.paid) + ', рынок примерно ' + money(chat.shownFair) + '. Максимум клиента скрыт. ' + (chat.local ? 'Режим: простой бот.' : 'Клиента играет ИИ.');
+    var html = chat.view.map(function(m){ return '<div class="b ' + m.w + (m.c ? ' ' + m.c : '') + '">' + esc(m.t) + '</div>'; }).join('');
+    if(chat.busy) html += '<div class="b sys">Клиент печатает…</div>';
+    if(chat.ended) html += '<div class="b sys"><button type="button" class="btn sm" id="chatDone">Вернуться на склад</button></div>';
+    var box = $('chatMsgs'); box.innerHTML = html; box.scrollTop = box.scrollHeight;
+    var d = $('chatDone'); if(d) d.addEventListener('click', closeChat);
+    var chips = '';
+    if(!chat.ended){
+      [[1.12,'Запросить'],[1.02,'Рыночная'],[.94,'Скинуть']].forEach(function(x){
+        var p = nice(chat.shownFair * x[0]), say = 'Отдам за ' + shown(p) + (cur === 'USD' ? ' долларов' : ' грн');
+        chips += '<button type="button" class="chip" data-say="' + esc(say) + '"' + (chat.busy ? ' disabled' : '') + '>' + x[1] + ' ' + money(p) + '</button>';
+      });
+    }
+    $('chatChips').innerHTML = chips;
+    var off = chat.busy || chat.ended;
+    $('chatInput').disabled = off; $('chatSend').disabled = off;
+  }
+
+  /* ---------- валюта, курс, ИИ ---------- */
+  var CALC_MONEY = ['buy','sell','fix','extra','target'];
+  function convertCalc(oldF, newF){
+    CALC_MONEY.forEach(function(id){
+      var el = $(id), v = parseFloat(el.value);
+      if(isFinite(v) && v > 0) el.value = Math.round(v * oldF / newF);
+    });
+  }
+  function setCur(c){
+    if(c === cur) return;
+    var oldF = fac(); cur = c; saveSet();
+    convertCalc(oldF, fac());
+    if(chat){ chat = null; toast('Валюта сменилась, разговор с клиентом закрыт.'); }
+    renderAll();
+  }
+  each(document.querySelectorAll('[data-cur]'), function(b){ b.addEventListener('click', function(){ setCur(b.dataset.cur); }); });
+  $('rate').addEventListener('change', function(){
+    var v = parseFloat($('rate').value);
+    if(!isFinite(v) || v <= 0){ $('rate').value = rate; return; }
+    var oldF = fac(); rate = v; saveSet();
+    if(cur === 'USD'){ convertCalc(oldF, fac()); }
+    if(chat){ chat = null; toast('Курс изменился, разговор с клиентом закрыт.'); }
+    renderAll();
+  });
+  function updateAiHint(){
+    each(document.querySelectorAll('[data-ai-set]'), function(b){ b.setAttribute('aria-pressed', (b.dataset.aiSet === 'on') === aiOn ? 'true' : 'false'); });
+    $('aiHint').textContent = !aiAvail ? 'ИИ сейчас недоступен на этой странице, поэтому клиента играет простой бот.' : aiOn ? 'Клиента играет ИИ: каждое сообщение использует твой лимит Claude. При первом сообщении страница спросит разрешение.' : 'Клиента играет простой бот без ИИ.';
+  }
+  each(document.querySelectorAll('[data-ai-set]'), function(b){ b.addEventListener('click', function(){ aiOn = b.dataset.aiSet === 'on'; saveSet(); updateAiHint(); }); });
+
+  /* ---------- калькулятор ---------- */
+  function num(id){ var v = parseFloat($(id).value); return isFinite(v) && v > 0 ? v : 0; }
+  function calc(){
+    var f = fac(), buy = num('buy') * f, fix = num('fix') * f, extra = num('extra') * f, sell = num('sell') * f, target = num('target') * f;
+    var feeP = Math.min(num('fee'), 100), days = Math.max(1, num('days'));
+    var fee = sell * feeP / 100, cost = buy + fix + extra, profit = sell - fee - cost;
+    var roi = cost > 0 ? profit / cost * 100 : 0, margin = sell > 0 ? profit / sell * 100 : 0;
+    var p = $('profit');
+    p.textContent = sgn(profit);
+    p.className = 'profit ' + (profit > 0 ? 'pos' : profit < 0 ? 'neg' : '');
+    $('roi').textContent = pct(roi);
+    $('margin').textContent = pct(margin);
+    $('perday').textContent = sgn(profit / days);
+    var v = $('verdict'), cls = '', txt = 'Введи цены';
+    if(sell > 0 && cost > 0){
+      if(profit <= 0){ cls = 'bad'; txt = 'Убыток, не бери'; }
+      else if(roi < 10){ cls = 'warn'; txt = 'Тонкая маржа'; }
+      else if(roi < 20){ cls = 'good'; txt = 'Нормальная сделка'; }
+      else { cls = 'good'; txt = 'Сильная сделка'; }
+    }
+    v.className = 'pill ' + cls; v.textContent = txt;
+    var parts = [
+      ['Покупка', buy, '--c-buy'], ['Ремонт', fix, '--c-fix'], ['Прочие расходы', extra, '--c-extra'],
+      ['Комиссия', fee, '--c-fee'], [profit < 0 ? 'Убыток' : 'Прибыль', profit, '--c-profit']
+    ];
+    var total = Math.max(sell, cost + fee, 1);
+    $('bar').innerHTML = parts.filter(function(x){ return x[1] > 0 && x[0] !== 'Убыток'; }).map(function(x){
+      return '<span style="width:' + (x[1] / total * 100) + '%;background:var(' + x[2] + ')"></span>';
+    }).join('') + (profit < 0 ? '<i class="mark" title="Цена продажи" style="left:' + (sell / total * 100) + '%"></i>' : '');
+    $('legend').innerHTML = parts.map(function(x){
+      return '<li><i style="background:var(' + x[2] + ')"></i>' + x[0] + '<b>' + money(x[1]) + '</b></li>';
+    }).join('');
+    var maxBuy = sell - fee - fix - extra - target;
+    $('maxbuy').textContent = sell > 0 ? (maxBuy > 0 ? money(maxBuy) : 'Нет такой цены, подними цену продажи') : money(0);
+  }
+  ['buy','sell','fix','extra','fee','days','target'].forEach(function(id){ $(id).addEventListener('input', calc); });
+
+  /* ---------- обучение: чек-лист ---------- */
+  var GROUPS = [
+    {title:'Юридическая чистота', items:[
+      {id:'imei', t:'IMEI набран (*#06#) и совпадает с коробкой и наклейкой на корпусе', stop:1},
+      {id:'ban', t:'IMEI не в списке украденных и не заблокирован оператором', stop:1},
+      {id:'lock', t:'Нет блокировки iCloud или аккаунта Google: телефон сброшен, привязки к чужому аккаунту нет', stop:1},
+      {id:'story', t:'Продавец понятно объясняет, откуда телефон, и не торопит', stop:1}
+    ]},
+    {title:'Экран и корпус', items:[
+      {id:'screen', t:'Экран без пятен, выгорания и цветных полос: открой белый и чёрный фон'},
+      {id:'touch', t:'Тач работает по всей площади, нет ложных нажатий'},
+      {id:'open', t:'Нет следов вскрытия: зазоры ровные, винты не сбиты'},
+      {id:'glass', t:'Рамка и стёкла камер без глубоких сколов'}
+    ]},
+    {title:'Начинка', items:[
+      {id:'bio', t:'Face ID, Touch ID или сканер отпечатка срабатывает'},
+      {id:'batt', t:'Состояние аккумулятора и число циклов записаны'},
+      {id:'cam', t:'Основная и фронтальная камеры снимают, автофокус не гуляет'},
+      {id:'snd', t:'Динамики и микрофон звучат чисто: сделай тестовый звонок и запись'},
+      {id:'net', t:'Wi-Fi, Bluetooth, GPS и связь работают с твоей SIM'},
+      {id:'chg', t:'Зарядка идёт по кабелю, порт не шатается'},
+      {id:'parts', t:'В настройках нет сообщений о неоригинальных деталях'}
+    ]},
+    {title:'Сделка', items:[
+      {id:'price', t:'Цена оставляет прибыль после ремонта и комиссии (проверь в калькуляторе)'},
+      {id:'meet', t:'Встреча в людном месте днём, перевод только после проверки'},
+      {id:'reset', t:'Сброс до заводских настроек сделан при тебе, аккаунт продавца удалён'}
+    ]}
+  ];
+  var allItems = [], stopItems = [];
+  GROUPS.forEach(function(g){ g.items.forEach(function(i){ allItems.push(i); if(i.stop) stopItems.push(i); }); });
+  var checked = load('perekup-check'); if(!Array.isArray(checked)) checked = [];
+  function renderChecks(){
+    $('groups').innerHTML = GROUPS.map(function(g){
+      return '<div class="group"><h3>' + esc(g.title) + '</h3>' + g.items.map(function(i){
+        var on = checked.indexOf(i.id) >= 0;
+        return '<label class="item' + (on ? ' done' : '') + '"><input type="checkbox" data-id="' + i.id + '"' + (on ? ' checked' : '') + '><span class="t">' + esc(i.t) + (i.stop ? '<span class="stop">стоп</span>' : '') + '</span></label>';
+      }).join('') + '</div>';
+    }).join('');
+    updateStatus();
+  }
+  function updateStatus(){
+    var done = allItems.filter(function(i){ return checked.indexOf(i.id) >= 0; }).length;
+    var stops = stopItems.filter(function(i){ return checked.indexOf(i.id) >= 0; }).length;
+    $('checkSummary').textContent = done + ' из ' + allItems.length + ' пунктов, стоп-пунктов ' + stops + ' из ' + stopItems.length;
+    $('checkFill').style.width = (done / allItems.length * 100) + '%';
+    var v = $('checkVerdict');
+    if(done === 0){ v.className = 'pill'; v.textContent = 'Проверка не начата'; }
+    else if(stops < stopItems.length){ v.className = 'pill bad'; v.textContent = 'Не плати: закрой пункты «стоп»'; }
+    else if(done < allItems.length){ v.className = 'pill warn'; v.textContent = 'Риски закрыты, дожми остальное'; }
+    else { v.className = 'pill good'; v.textContent = 'Можно брать'; }
+  }
+  $('groups').addEventListener('change', function(e){
+    var el = e.target; if(!el.dataset || !el.dataset.id) return;
+    var idx = checked.indexOf(el.dataset.id);
+    if(el.checked && idx < 0) checked.push(el.dataset.id);
+    if(!el.checked && idx >= 0) checked.splice(idx, 1);
+    el.closest('.item').classList.toggle('done', el.checked);
+    store('perekup-check', checked);
+    updateStatus();
+  });
+  function resetChecks(){ checked = []; store('perekup-check', checked); renderChecks(); }
+  $('checkReset').addEventListener('click', resetChecks);
+  $('resetCheck').addEventListener('click', function(){ resetChecks(); toast('Чек-лист сброшен'); });
+
+  /* ---------- обучение: уроки и тест ---------- */
+  var LESSONS = [
+    {id:'l1', t:'Как зарабатывает перекуп', m:3, b:[
+      ['p','Прибыль перекупа это цена продажи минус всё, что ты потратил: покупка, ремонт, дорога, комиссия площадки. Если забыть хотя бы одну статью, на бумаге прибыль будет больше, чем в кармане.'],
+      ['ul',['ROI показывает, сколько ты заработал на каждую вложенную гривну.','Маржа показывает долю прибыли в цене продажи.','Прибыль в день важна, потому что деньги в залежавшемся телефоне не работают.']],
+      ['p','Ориентир для старта: брать телефон, который реально продать за неделю с прибылью от 10% вложений. Это ориентир, а не закон, подстрой его под свой рынок.']
+    ]},
+    {id:'l2', t:'Где искать товар', m:3, b:[
+      ['ul',['Доски объявлений (OLX и похожие): ищи объявления со словами «срочно», плохими фото и неточным названием модели.','Чаты в мессенджерах и группы в соцсетях: быстрее, но выше риск, поэтому проверяй продавца и телефон.','Знакомые и коллеги: люди меняют телефон и хотят быстро продать старый.','Trade-in и комиссионки: меньше риска, но и маржа обычно ниже.']],
+      ['p','Выбирай ходовые модели: на них есть спрос, и цену легко сверить. Редкий телефон может лежать месяцами.']
+    ]},
+    {id:'l3', t:'Как оценить цену', m:3, b:[
+      ['ul',['Открой три-пять похожих объявлений: та же модель, память и состояние.','Смотри на цены, по которым телефоны реально уходят, а не на самые высокие.','Вычти из рыночной цены ремонт, комиссию и свою прибыль. Получится потолок цены покупки, его считает калькулятор.','Учитывай комплект: коробка, зарядка и чек повышают цену.','Спрос обычно выше перед праздниками и началом учебного года.']]
+    ]},
+    {id:'l4', t:'Проверка iPhone и Android', m:4, b:[
+      ['p','Главное правило: сначала проверка, потом деньги. Названия пунктов зависят от версии системы и могут отличаться.'],
+      ['h','iPhone'],
+      ['ul',['Настройки → Основные → Об этом устройстве: модель, серийный номер, IMEI.','Настройки → Аккумулятор → Состояние аккумулятора: максимальная ёмкость в процентах.','После сброса телефон не должен просить чужой Apple ID, а «Локатор» должен быть отключён.']],
+      ['h','Android'],
+      ['ul',['Настройки → О телефоне: модель и IMEI.','После сброса не должен появляться экран с запросом чужого Google-аккаунта.','Продавец должен выйти и из аккаунта производителя (Samsung, Xiaomi и других).']]
+    ]},
+    {id:'l5', t:'Торг при покупке', m:3, b:[
+      ['ul',['Называй конкретные недостатки и их цену: батарея 82%, замена стоит столько-то.','Не показывай, что телефон тебе очень нужен.','Держи в голове потолок цены из калькулятора и не поднимай его на встрече.','Деньги отдавай после проверки и сброса, не раньше.','Если продавец давит и торопит, это повод уйти.']]
+    ]},
+    {id:'l6', t:'Продажа: фото и описание', m:3, b:[
+      ['ul',['Снимай при дневном свете на чистом фоне: экран включён и выключен, задняя крышка, углы, порт.','Пиши модель, память, цвет, состояние аккумулятора, комплект и что менялось.','Не скрывай дефекты: честное описание убирает споры после сделки.','Ставь цену с небольшим запасом на торг, но не выше рынка.','Отвечай быстро: покупатель обычно пишет сразу нескольким продавцам.','Если за неделю нет откликов, обнови фото и пересмотри цену.']]
+    ]},
+    {id:'l7', t:'Безопасность и закон', m:3, b:[
+      ['ul',['Не покупай телефон без проверки IMEI и понятного происхождения: за краденый можно ответить.','Сохраняй переписку и фото сделки.','Встречайся в людных местах днём, лучше в магазине или кафе.','Не соглашайся на оплату «потом» и сомнительные переводы.','Если ты продаёшь регулярно ради дохода, это может считаться предпринимательской деятельностью с налогами. Уточни правила у бухгалтера или в налоговой службе.']]
+    ]}
+  ];
+  var learnDone = load('perekup-learn'); if(!Array.isArray(learnDone)) learnDone = [];
+  function lessonBody(l){
+    return l.b.map(function(blk){
+      if(blk[0] === 'p') return '<p>' + esc(blk[1]) + '</p>';
+      if(blk[0] === 'h') return '<h4>' + esc(blk[1]) + '</h4>';
+      return '<ul>' + blk[1].map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    }).join('');
+  }
+  function learnProgress(){
+    $('learnSummary').textContent = 'Прочитано ' + learnDone.length + ' из ' + LESSONS.length;
+    $('learnFill').style.width = (learnDone.length / LESSONS.length * 100) + '%';
+  }
+  function renderLessons(){
+    $('lessons').innerHTML = LESSONS.map(function(l, i){
+      var d = learnDone.indexOf(l.id) >= 0;
+      return '<details class="lesson' + (d ? ' done' : '') + '" data-id="' + l.id + '"><summary><span class="ln">' + (i + 1) + '</span>' + esc(l.t) + '<span class="lm">' + l.m + ' мин</span></summary>' +
+        '<div class="lbody">' + lessonBody(l) + '<div><button class="btn sm ghost markread" type="button" data-id="' + l.id + '">' + (d ? 'Прочитано, снять отметку' : 'Отметить прочитанным') + '</button></div></div></details>';
+    }).join('');
+    learnProgress();
+  }
+  $('lessons').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('.markread') : null; if(!b) return;
+    var id = b.dataset.id, idx = learnDone.indexOf(id);
+    if(idx >= 0) learnDone.splice(idx, 1); else learnDone.push(id);
+    var on = learnDone.indexOf(id) >= 0;
+    b.textContent = on ? 'Прочитано, снять отметку' : 'Отметить прочитанным';
+    b.closest('.lesson').classList.toggle('done', on);
+    store('perekup-learn', learnDone);
+    learnProgress();
+  });
+  $('resetLearn').addEventListener('click', function(){ learnDone = []; store('perekup-learn', learnDone); renderLessons(); toast('Обучение сброшено'); });
+
+  var QUIZ = [
+    {q:'Ты купил телефон за 10 000 ₴, потратил 500 ₴ на ремонт и 100 ₴ на дорогу, продал за 12 000 ₴. Какая прибыль?', o:['2 000 ₴','1 400 ₴','1 900 ₴'], a:1, w:'Считай все расходы: 10 000 + 500 + 100 = 10 600 ₴. Прибыль 12 000 − 10 600 = 1 400 ₴.'},
+    {q:'Что сделать при встрече с продавцом раньше всего?', o:['Отдать деньги, чтобы он не передумал','Сверить IMEI (*#06#) с коробкой и наклейкой на корпусе','Сразу начать торговаться'], a:1, w:'Совпадение IMEI проверяют до денег. Если номера не совпадают, это стоп.'},
+    {q:'Телефон дешевле рынка на 40%, а продавец торопит. Что это скорее всего?', o:['Удачная находка','Повод проверить блокировку и происхождение','Обычная цена для этого времени года'], a:1, w:'Слишком низкая цена и спешка часто означают блокировку, кражу или скрытую поломку.'},
+    {q:'Объявление висит месяц без откликов. Что разумно сделать?', o:['Поднять цену','Сверить цену с похожими объявлениями и обновить фото','Просто ждать дальше'], a:1, w:'Залежавшийся телефон съедает прибыль в день. Сверь цену с рынком и улучши объявление.'}
+  ];
+  var quizState = {};
+  function renderQuiz(){
+    $('quiz').innerHTML = QUIZ.map(function(q, qi){
+      var st = quizState[qi], answered = st !== undefined;
+      return '<div class="q"><h3>' + (qi + 1) + '. ' + esc(q.q) + '</h3><div class="opts">' + q.o.map(function(o, oi){
+        var cls = ''; if(answered){ if(oi === q.a) cls = ' right'; else if(oi === st) cls = ' wrong'; }
+        return '<button type="button" class="opt' + cls + '" data-q="' + qi + '" data-o="' + oi + '"' + (answered ? ' disabled' : '') + '>' + esc(o) + '</button>';
+      }).join('') + '</div>' + (answered ? '<p class="why">' + esc(q.w) + '</p>' : '') + '</div>';
+    }).join('');
+    var n = 0, ok = 0;
+    QUIZ.forEach(function(q, qi){ if(quizState[qi] !== undefined){ n++; if(quizState[qi] === q.a) ok++; } });
+    $('quizScore').textContent = n < QUIZ.length ? 'Отвечено ' + n + ' из ' + QUIZ.length + '.' : 'Результат: ' + ok + ' из ' + QUIZ.length + (ok === QUIZ.length ? '. Отлично, можно переходить к практике.' : '. Перечитай уроки по ошибкам и пройди ещё раз.');
+  }
+  $('quiz').addEventListener('click', function(e){
+    var b = e.target.closest ? e.target.closest('.opt') : null; if(!b || b.disabled) return;
+    quizState[b.dataset.q] = parseInt(b.dataset.o, 10);
+    renderQuiz();
+  });
+  $('quizReset').addEventListener('click', function(){ quizState = {}; renderQuiz(); });
+  each(document.querySelectorAll('[data-sub]'), function(b){
+    b.addEventListener('click', function(){
+      each(document.querySelectorAll('[data-sub]'), function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      ['lessons','check','quiz'].forEach(function(s){ $('sub-' + s).hidden = (s !== b.dataset.sub); });
+    });
+  });
+
+  /* ---------- общий рендер и запуск ---------- */
+  function renderAll(){
+    each(document.querySelectorAll('.sym'), function(e){ e.textContent = cur === 'USD' ? '$' : '₴'; });
+    each(document.querySelectorAll('[data-cur]'), function(b){ b.setAttribute('aria-pressed', b.dataset.cur === cur ? 'true' : 'false'); });
+    $('rate').value = rate;
+    renderTag(); renderPresets(); renderWallet(); renderOffers(); renderStock(); calc(); updateAiHint();
+  }
+  applyTheme();
+  applyDevice();
+  if(cur === 'USD') convertCalc(1, rate);
+  renderChecks();
+  renderLessons();
+  renderQuiz();
+  renderAll();
+  translatePage(document.body);
+  show(location.hash.replace('#',''));
+
+  if(window.claude && window.claude.use){
+    window.claude.use('sample').then(function(s){
+      if(s && typeof s.json === 'function'){ sampleFn = s; aiAvail = true; }
+      updateAiHint();
+    }).catch(function(){ updateAiHint(); });
+  }
+})();
+</script>
+
+</body></html>
